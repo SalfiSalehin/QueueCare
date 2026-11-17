@@ -1,0 +1,14 @@
+# Line endings: Windows checkouts must not turn shell scripts into CRLF (a CRLF "#!/bin/bash" fails inside Linux
+# containers with "bad interpreter"). Text is normalised to LF in the repository.
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile* text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Caddyfile text eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

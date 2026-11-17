@@ -1,0 +1,21 @@
+# Key design decisions
+
+Each entry: what was chosen, why, and what it costs. Order is roughly the order they were made.
+
+| # | Decision | Why | Cost / trade-off |
+|---|---|---|---|
+| 1 | **Modular monolith** (FastAPI + SQLAlchemy) instead of microservices | One deployable, transactions across modules (booking + notification + event in one commit), far less operational surface for a small team | Modules share a process; a hard boundary needs discipline, not the network |
+| 2 | **Row-level security in PostgreSQL**, fail-closed, with transaction-local `app.current_clinic_id`; the API connects as a role that is not the table owner and has no `BYPASSRLS` | Tenant isolation holds even if application code forgets a filter; a bug leaks nothing rather than everything | Every request needs the context set inside its transaction; cross-clinic workers must opt in explicitly (platform context) |
+| 3 | **GiST exclusion constraint** for overlapping appointments (SQLSTATE 23P01 → HTTP 409) | Double booking is impossible at the database level, not "unlikely"; tested with concurrent bookings (exactly one winner) | Requires `btree_gist`; conflicts surface as a database error that must be translated correctly (see case study) |
+| 4 | **Transactional outbox** for real-time events, relayed to Redis pub/sub | An event exists if and only if the change committed; no lost or phantom events after a crash. Clients re-sync via REST on reconnect | At-least-once delivery, so clients dedupe by event id |
+| 5 | **Cookie sessions + CSRF + short-lived access JWT + rotating refresh tokens**, not tokens in localStorage | Tokens are unreachable from JavaScript; refresh-token reuse can be detected | Needs Origin/CSRF checks on every unsafe request and careful CORS (explicit origins only) |
+| 6 | **Authorization on the backend only**; 404 for non-members, 403 for wrong role, 401 for anonymous | The UI can never be the security boundary; 404 avoids confirming a clinic exists | Slightly more test work: a route inventory test sweeps every route |
+| 7 | **ML on synthetic data, labelled everywhere**; LightGBM quantile regression (q10/q50/q90) + conformal calibration; models saved in LightGBM's native text format, never pickle; shared train/serve feature code | No real patient data was available or appropriate; native text avoids arbitrary-code-execution on load; one feature function prevents train/serve skew | Results measure the simulator. Quantile objective cannot take monotone constraints in LightGBM, so they apply only to the L2 comparison model |
+| 8 | **Honest fallback**: when no model is active, estimates come from a heuristic and say `source: heuristic` | The API never pretends a model answered | Two code paths to keep consistent |
+| 9 | **Notifications are created in the caller's transaction** with a unique idempotency key, and enqueued inside a savepoint | A retry or crash can neither duplicate a notification nor lose the business change; a notification failure cannot roll back a booking | Delivery is a separate worker with leases and backoff (more moving parts) |
+| 10 | **Mock email/SMS providers** | No real provider credentials or personal data in a demo; the delivery pipeline is still fully exercised | Nothing is ever sent |
+| 11 | **Rate limits in Redis, falling back to per-process memory** (never fail open); per-IP on auth, per-user on expensive endpoints | Brute force and runaway clients are bounded even if Redis is down | Per-process counters are weaker under several replicas |
+| 12 | **Admin analytics as aggregates via explicit SQL**, clinic-local dates, ratios returned as `null` when the denominator is 0 | Honest numbers: no division by zero, no invented zeros | Hand-written SQL needs its own isolation tests |
+| 13 | **One uvicorn worker per container** | Background loops live in each process; scale by containers, not `--workers` | Slightly more memory per replica |
+| 14 | **Single host with Docker Compose + Caddy** for deployment | WebSockets, Redis and RLS all work; cheap; easy to rehearse locally | No autoscaling or zero-downtime deploys; you own backups |
+| 15 | **Tests run against a real PostgreSQL**, truncating tables before each test | RLS, exclusion constraints and concurrency can only be tested for real on the real engine | Slower suite (about 8 minutes) |

@@ -1,0 +1,161 @@
+# QueueCare - production-style stack (single host). Host-neutral: any Linux VM with Docker Compose v2.
+#
+#   cp .env.production.example .env.production      # then: scripts/generate-secrets.sh  (fills every secret)
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Only Caddy publishes ports (80/443). Postgres, Redis, the API and the web app are reachable only on the internal network.
+# Rehearse locally first with DOMAIN=localhost (Caddy issues a local certificate). See docs/deployment.md.
+
+name: queuecare-prod
+
+x-hardening: &hardening
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env.production}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env.production}
+      APP_DB_USER: ${APP_DB_USER:?set in .env.production}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set in .env.production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sh:/docker-entrypoint-initdb.d/01-init-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set in .env.production}", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks: [internal]     # no cap_drop here: the official image starts as root and drops to the redis user itself
+
+  # One-shot job: applies Alembic migrations as the OWNER role, then exits. The API starts only after it succeeds.
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: prod
+    image: queuecare-backend:prod
+    env_file: .env.production
+    environment:
+      APP_ENV: production
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    <<: *hardening
+    networks: [internal]
+
+  backend:
+    image: queuecare-backend:prod
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      APP_ENV: production
+      TRUST_PROXY_HEADERS: "true"      # Caddy is the only thing in front of the API
+      MPLCONFIGDIR: /tmp               # read-only root filesystem: libraries that cache write to /tmp
+      NUMBA_CACHE_DIR: /tmp
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    volumes:
+      - ml_models:/app/ml/models:ro     # trained model bundles; empty = honest heuristic fallback
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    <<: *hardening
+    networks: [internal]
+
+  # The web app (Next.js standalone server). Reachable only through Caddy.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: prod
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+        NEXT_PUBLIC_WS_URL: ""            # empty = use the page's own origin (Caddy proxies /ws to the API)
+    image: queuecare-frontend:prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    read_only: true
+    tmpfs: [/tmp, /app/.next/cache]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    <<: *hardening
+    networks: [internal]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.production}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}   # ':-' also covers an EMPTY value, which Caddy would reject
+    ports:
+      - "${HTTP_PORT:-80}:80"        # change only for a local rehearsal when Windows/another program holds 80/443
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./infrastructure/deployment/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal, public]
+
+  # On-demand: docker compose -f docker-compose.prod.yml --env-file .env.production --profile ops run --rm backup
+  backup:
+    profiles: [ops]
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["sh", "-c", "pg_dump -h postgres -U ${POSTGRES_USER} -d ${POSTGRES_DB} -Fc -f /backups/queuecare-$$(date -u +%Y%m%dT%H%M%SZ).dump && ls -l /backups"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal:
+    internal: true          # no route to the internet or the host
+  public: {}
+
+volumes:
+  postgres_data:
+  ml_models:
+  caddy_data:
+  caddy_config:

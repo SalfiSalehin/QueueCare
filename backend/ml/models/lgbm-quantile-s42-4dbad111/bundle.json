@@ -1,0 +1,66 @@
+{
+  "algorithm": "lightgbm-quantile",
+  "cqr_offset_minutes": 0.0,
+  "dataset_sha256": "4dbad111077e25799002e1b5b1f6727487185fb24eef867c9617745e36b2cd36",
+  "features": [
+    "people_ahead",
+    "n_waiting_ahead",
+    "n_scheduled_ahead",
+    "n_walkin_ahead",
+    "in_service",
+    "elapsed_in_service_min",
+    "sched_slot_minutes_ahead",
+    "doctor_recent_mean_service",
+    "doctor_recent_p80_service",
+    "has_history",
+    "slot_minutes",
+    "expected_work_ahead_min",
+    "arrivals_last_30min",
+    "hour_of_day",
+    "day_of_week",
+    "is_scheduled",
+    "lateness_min",
+    "priority"
+  ],
+  "files": {
+    "q10": "q10.txt",
+    "q50": "q50.txt",
+    "q90": "q90.txt"
+  },
+  "libraries": {
+    "lightgbm": "4.7.0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.1",
+    "python": "3.12.16",
+    "scikit-learn": "1.9.1"
+  },
+  "nominal_coverage": 0.8,
+  "quantiles": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "seed": 42,
+  "synthetic": true,
+  "test_metrics": {
+    "interval": {
+      "coverage": 0.869822,
+      "mean_width": 23.366816,
+      "nominal_coverage": 0.8,
+      "pinball_q10": 1.111589,
+      "pinball_q50": 3.684265,
+      "pinball_q90": 2.687102
+    },
+    "point": {
+      "bias": -3.352377,
+      "mae": 7.36853,
+      "median_abs_error": 1.751677,
+      "r2": 0.729162,
+      "rmse": 19.78163,
+      "within_10min": 0.82996,
+      "within_5min": 0.700405
+    }
+  },
+  "trained_at": "2026-11-12T10:31:49.129929+00:00",
+  "version": "lgbm-quantile-s42-4dbad111"
+}

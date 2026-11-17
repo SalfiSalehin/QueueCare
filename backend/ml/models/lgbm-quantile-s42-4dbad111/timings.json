@@ -1,0 +1,7 @@
+{
+  "generate_and_load": 2.15,
+  "baselines_and_sklearn_models": 38.88,
+  "lightgbm_tuning_and_fit": 5.67,
+  "evaluation": 0.06,
+  "shap": 1.25
+}

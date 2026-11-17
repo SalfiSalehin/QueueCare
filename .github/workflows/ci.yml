@@ -1,0 +1,141 @@
+# Continuous integration. NOTE: not yet executed on GitHub. Locally the same steps were run in Docker: backend tests (441),
+# frontend type-check, the browser tests (16) and a production-stack rehearsal. Treat the first run as a test of this file.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+# A newer push to the same branch cancels the older run (saves minutes; the newest commit is the one that matters).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create a throw-away .env with random secrets (never committed)
+        run: |
+          cp .env.example .env
+          sed -i "s/CHANGE_ME_OWNER_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_APP_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_REDIS_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_64_BYTE_RANDOM_SECRET/$(openssl rand -hex 32)/g" .env
+          sed -i "s/CHANGE_ME_CSRF_SECRET/$(openssl rand -hex 32)/g" .env
+
+      - name: Build backend image
+        run: docker compose build backend
+
+      - name: Lint (ruff)
+        run: docker compose run --rm --no-deps backend ruff check --select E9,F,B,S --ignore S101,S105,S106,S608,B008 /app/backend /app/ml
+
+      - name: Tests (real PostgreSQL with row-level security)
+        run: docker compose run --rm backend pytest -q
+
+      - name: Dependency vulnerability scan (pip-audit)
+        run: docker compose run --rm --no-deps backend pip-audit -r /app/backend/requirements.txt
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (image build)
+        run: docker compose build frontend
+      - name: Type check
+        run: docker compose run --rm --no-deps frontend npm run typecheck
+      - name: Unit tests
+        run: docker compose run --rm --no-deps frontend npm test
+      - name: Production build
+        run: docker compose run --rm --no-deps -e NEXT_TELEMETRY_DISABLED=1 frontend npm run build
+
+  # Real browser, real API, real database. Added in F4 and never run on GitHub; treat its first run as a test of this job.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Throw-away .env with random secrets (never committed)
+        run: |
+          cp .env.example .env
+          sed -i "s/CHANGE_ME_OWNER_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_APP_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_REDIS_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_64_BYTE_RANDOM_SECRET/$(openssl rand -hex 32)/g" .env
+          sed -i "s/CHANGE_ME_CSRF_SECRET/$(openssl rand -hex 32)/g" .env
+      - name: Start the stack and migrate
+        run: |
+          docker compose up -d --wait postgres redis backend
+          docker compose run --rm backend alembic upgrade head
+      - name: Platform admin (needed to approve the test clinic)
+        run: |
+          echo "ADMIN_PW=$(openssl rand -hex 12)Aa1!" >> "$GITHUB_ENV"
+      - run: docker compose run --rm -e QUEUECARE_ADMIN_PASSWORD="$ADMIN_PW" backend python -m app.cli create-superadmin --email platform@example.com
+      - name: Start the web app
+        run: |
+          docker compose up -d frontend
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/ >/dev/null && break; sleep 3; done
+          curl -sf http://localhost:3000/ >/dev/null
+      - name: Browser tests
+        run: docker compose --profile e2e run --rm -e E2E_PLATFORM_EMAIL=platform@example.com -e QUEUECARE_ADMIN_PASSWORD="$ADMIN_PW" e2e
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: e2e-results, path: frontend/e2e-results, if-no-files-found: ignore }
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=80 backend frontend
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  production-stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production env with random secrets and a local domain
+        run: |
+          cp .env.production.example .env.production
+          sed -i "s/queuecare.example.com/localhost/g; s/^ACME_EMAIL=.*/ACME_EMAIL=/" .env.production
+          bash scripts/generate-secrets.sh   # via bash: a checkout from Windows may not keep the executable bit
+      - name: Compose file is valid
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production config -q
+      - name: Production images build (the migrate service owns the backend build; backend reuses it)
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production build migrate frontend
+      - name: Stack starts and the API is ready behind HTTPS
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.production up -d --wait --wait-timeout 180
+          curl -ksf https://localhost/health/ready
+          curl -ksf https://localhost/ | grep -q "Know where you stand in line"   # the web app is served through Caddy
+          curl -ksf https://localhost/login | grep -q "Welcome back"
+          test "$(curl -ks -o /dev/null -w '%{http_code}' https://localhost/api/v1/auth/me)" = 401   # API reachable on the same origin
+      - name: Logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production logs --tail=100
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.production down -v
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan history for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

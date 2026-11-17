@@ -1,0 +1,42 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt for a real domain; a local CA for DOMAIN=localhost).
+# Exposed: the web app (everything not matched below) and the API surface (/api, /health, /ws). Interactive API docs
+# are disabled in production by the application itself.
+{
+	# docker-compose.prod.yml substitutes a placeholder when ACME_EMAIL is empty (fine for DOMAIN=localhost, local CA).
+	# On a real domain set ACME_EMAIL so Let's Encrypt can send expiry notices.
+	email {$ACME_EMAIL:admin@localhost}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Request bodies are also capped by the application (MAX_REQUEST_BODY_BYTES); this is a cheaper first line.
+	request_body {
+		max_size 2MB
+	}
+
+	@api path /api/* /health/* /ws
+	handle @api {
+		# Caddy sets X-Forwarded-For to the real client address; the API trusts it only because
+		# TRUST_PROXY_HEADERS=true and no other path reaches the API container.
+		reverse_proxy backend:8000 {
+			health_uri /health/live
+			health_interval 15s
+			flush_interval -1   # do not buffer WebSocket / streaming responses
+		}
+	}
+
+	# Everything else is the web app. It never talks to the API directly: the browser calls /api/* on this same origin,
+	# which the block above sends to the backend, so session cookies stay same-origin.
+	handle {
+		reverse_proxy frontend:3000 {
+			health_uri /
+			health_interval 15s
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

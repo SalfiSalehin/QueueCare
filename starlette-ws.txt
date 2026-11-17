@@ -1,0 +1,103 @@
+﻿1.10.0
+class WebSocketTestSession:
+    def __init__(
+        self,
+        app: ASGI3App,
+        scope: Scope,
+        portal_factory: _PortalFactoryType,
+    ) -> None:
+        self.app = app
+        self.scope = scope
+        self.accepted_subprotocol = None
+        self.portal_factory = portal_factory
+        self.extra_headers = None
+
+    def __enter__(self) -> Self:
+        with contextlib.ExitStack() as stack:
+            self.portal = portal = stack.enter_context(self.portal_factory())
+            fut, cs = portal.start_task(self._run)
+            stack.callback(fut.result)
+            stack.callback(portal.call, cs.cancel)
+            self.send({"type": "websocket.connect"})
+            message = self.receive()
+            self._raise_on_close(message)
+            self.accepted_subprotocol = message.get("subprotocol", None)
+            self.extra_headers = message.get("headers", None)
+            stack.callback(self.close, 1000)
+            self.exit_stack = stack.pop_all()
+            return self
+
+    def __exit__(self, *args: Any) -> bool | None:
+        return self.exit_stack.__exit__(*args)
+
+    async def _run(self, *, task_status: anyio.abc.TaskStatus[anyio.CancelScope]) -> None:
+        """
+        The sub-thread in which the websocket session runs.
+        """
+        send_tx, send_rx = anyio.create_memory_object_stream[Message](math.inf)
+        receive_tx, receive_rx = anyio.create_memory_object_stream[Message](math.inf)
+        with send_tx, send_rx, receive_tx, receive_rx, anyio.CancelScope() as cs:
+            self._receive_tx = receive_tx
+            self._send_rx = send_rx
+            task_status.started(cs)
+            await self.app(self.scope, receive_rx.receive, send_tx.send)
+
+            # wait for cs.cancel to be called before closing streams
+            await anyio.sleep_forever()
+
+    def _raise_on_close(self, message: Message) -> None:
+        if message["type"] == "websocket.close":
+            raise WebSocketDisconnect(code=message.get("code", 1000), reason=message.get("reason", ""))
+        elif message["type"] == "websocket.http.response.start":
+            status_code: int = message["status"]
+            headers: list[tuple[bytes, bytes]] = message["headers"]
+            body: list[bytes] = []
+            while True:
+                message = self.receive()
+                assert message["type"] == "websocket.http.response.body"
+                body.append(message["body"])
+                if not message.get("more_body", False):
+                    break
+            raise WebSocketDenialResponse(status_code=status_code, headers=headers, content=b"".join(body))
+
+    def send(self, message: Message) -> None:
+        self.portal.call(self._receive_tx.send, message)
+
+    def send_text(self, data: str) -> None:
+        self.send({"type": "websocket.receive", "text": data})
+
+    def send_bytes(self, data: bytes) -> None:
+        self.send({"type": "websocket.receive", "bytes": data})
+
+    def send_json(self, data: Any, mode: Literal["text", "binary"] = "text") -> None:
+        text = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+        if mode == "text":
+            self.send({"type": "websocket.receive", "text": text})
+        else:
+            self.send({"type": "websocket.receive", "bytes": text.encode("utf-8")})
+
+    def close(self, code: int = 1000, reason: str | None = None) -> None:
+        self.send({"type": "websocket.disconnect", "code": code, "reason": reason})
+
+    def receive(self) -> Message:
+        return self.portal.call(self._send_rx.receive)
+
+    def receive_text(self) -> str:
+        message = self.receive()
+        self._raise_on_close(message)
+        return cast(str, message["text"])
+
+    def receive_bytes(self) -> bytes:
+        message = self.receive()
+        self._raise_on_close(message)
+        return cast(bytes, message["bytes"])
+
+    def receive_json(self, mode: Literal["text", "binary"] = "text") -> Any:
+        message = self.receive()
+        self._raise_on_close(message)
+        if mode == "text":
+            text = message["text"]
+        else:
+            text = message["bytes"].decode("utf-8")
+        return json.loads(text)
+

@@ -1,0 +1,56 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+playwright-report/
+test-results/
+
+# ML artifacts (generated, reproducible)
+ml/models/*
+!ml/models/.gitkeep
+ml/datasets/*
+!ml/datasets/.gitkeep
+*.joblib
+*.parquet
+
+# Docker / local data
+postgres_data/
+redis_data/
+*.dump
+*.sql.gz
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+!.env.production.example
+backups/
+
+# Browser tests
+frontend/e2e-results/
+frontend/e2e/.seed.json
+frontend/e2e/.auth/

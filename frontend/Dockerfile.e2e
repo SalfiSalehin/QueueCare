@@ -1,0 +1,9 @@
+# Browser tests. Installs the Chromium that matches the installed @playwright/test, so the two can never disagree.
+FROM node:22-bookworm
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1 CI=1
+COPY package.json package-lock.json* ./
+RUN npm install
+RUN npx playwright install --with-deps chromium
+COPY . .
+CMD ["npx", "playwright", "test"]

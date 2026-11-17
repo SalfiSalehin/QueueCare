@@ -1,0 +1,122 @@
+# QueueCare — local development stack.
+# Usage: cp .env.example .env  (edit secrets)  &&  docker compose up --build
+# Production uses a separate file (docker-compose.prod.yml, added in Phase 11).
+
+name: queuecare
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      APP_DB_USER: ${APP_DB_USER:?set APP_DB_USER in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres-init.sh:/docker-entrypoint-initdb.d/01-init-roles.sh:ro
+    ports:
+      - "127.0.0.1:5432:5432"   # bound to localhost only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [queuecare]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"   # bound to localhost only
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks: [queuecare]
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app/backend   # hot reload + tests/alembic visible without rebuilding
+      - ./ml:/app/ml
+      - ./.env.production.example:/app/.env.production.example:ro   # checked by tests/unit/test_production_config.py
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks: [queuecare]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    restart: unless-stopped
+    environment:
+      # The browser calls this origin (/api/v1/...); Next proxies it to the backend, so cookies stay same-origin.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-/api/v1}
+      API_INTERNAL_URL: http://backend:8000
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+      NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-true}
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks: [queuecare]
+
+  # Browser tests (profile `e2e`; not started by `docker compose up`). It joins the frontend's network namespace, so the
+  # browser sees the app at http://localhost:3000, the same origin a developer's browser uses, and the API's CORS and
+  # CSRF rules apply unchanged. See docs/frontend.md, "Browser tests".
+  e2e:
+    profiles: [e2e]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.e2e
+    network_mode: "service:frontend"
+    depends_on:
+      frontend:
+        condition: service_started
+    environment:
+      BASE_URL: http://localhost:3000
+      E2E_BACKEND_HOST: backend
+      E2E_PLATFORM_EMAIL: ${E2E_PLATFORM_EMAIL:-}
+      QUEUECARE_ADMIN_PASSWORD: ${QUEUECARE_ADMIN_PASSWORD:-}
+    volumes:
+      - ./frontend/e2e-results:/app/e2e-results
+      # The tests are mounted, not baked into the image, so editing them needs no rebuild (the image is only the toolchain).
+      - ./frontend/e2e:/app/e2e
+
+volumes:
+  postgres_data:
+
+networks:
+  queuecare:
+    driver: bridge

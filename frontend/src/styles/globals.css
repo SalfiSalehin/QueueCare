@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { color-scheme: light; }
+body { @apply bg-paper font-sans text-slate-900 antialiased; }
+h1, h2, h3 { @apply font-display; }
+.tnum { font-variant-numeric: tabular-nums; }
+:focus-visible { @apply outline-none ring-2 ring-teal-600 ring-offset-2; }
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* One orchestrated moment: the sample queue on the landing and sign-in pages settles in once. */
+@keyframes settle { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.settle { animation: settle 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 110ms); }

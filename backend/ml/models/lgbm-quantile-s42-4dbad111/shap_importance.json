@@ -1,0 +1,20 @@
+{
+  "people_ahead": 7.418199603676871,
+  "expected_work_ahead_min": 5.2912253793994655,
+  "n_walkin_ahead": 3.2910449449970924,
+  "slot_minutes": 1.3507920929637964,
+  "is_scheduled": 1.3014357019494218,
+  "elapsed_in_service_min": 0.6710585847915553,
+  "hour_of_day": 0.5284767518322885,
+  "sched_slot_minutes_ahead": 0.3985795938290183,
+  "doctor_recent_mean_service": 0.3535670149466996,
+  "doctor_recent_p80_service": 0.2920948374597048,
+  "day_of_week": 0.12206320578043041,
+  "lateness_min": 0.08706203432973667,
+  "arrivals_last_30min": 0.04441192457452387,
+  "n_scheduled_ahead": 0.01874531768518218,
+  "priority": 0.0169571854135862,
+  "n_waiting_ahead": 0.0,
+  "in_service": 0.0,
+  "has_history": 0.0
+}
