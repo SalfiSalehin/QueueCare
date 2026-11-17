@@ -35,10 +35,10 @@ jobs:
         run: docker compose build backend
 
       - name: Lint (ruff)
-        run: docker compose run --rm --no-deps backend ruff check --select E9,F,B,S --ignore S101,S105,S106,S608,B008 /app/backend /app/ml
+        run: docker compose run --rm --no-deps backend ruff check --no-cache --select E9,F,B,S --ignore S101,S105,S106,S608,B008 /app/backend /app/ml
 
       - name: Tests (real PostgreSQL with row-level security)
-        run: docker compose run --rm backend pytest -q
+        run: docker compose run --rm backend pytest -q -p no:cacheprovider
 
       - name: Dependency vulnerability scan (pip-audit)
         run: docker compose run --rm --no-deps backend pip-audit -r /app/backend/requirements.txt
@@ -52,6 +52,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Throw-away .env (compose refuses to parse docker-compose.yml without its required variables, even for the frontend)
+        run: |
+          cp .env.example .env
+          sed -i "s/CHANGE_ME_OWNER_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_APP_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_REDIS_PASSWORD/$(openssl rand -hex 16)/g" .env
+          sed -i "s/CHANGE_ME_64_BYTE_RANDOM_SECRET/$(openssl rand -hex 32)/g" .env
+          sed -i "s/CHANGE_ME_CSRF_SECRET/$(openssl rand -hex 32)/g" .env
       - name: Install dependencies (image build)
         run: docker compose build frontend
       - name: Type check
@@ -83,6 +91,10 @@ jobs:
         run: |
           echo "ADMIN_PW=$(openssl rand -hex 12)Aa1!" >> "$GITHUB_ENV"
       - run: docker compose run --rm -e QUEUECARE_ADMIN_PASSWORD="$ADMIN_PW" backend python -m app.cli create-superadmin --email platform@example.com
+      - name: Let the web container write to the mounted frontend folder
+        # The dev container runs as a non-root user but the checkout belongs to the runner's user, so Next.js got
+        # "EACCES: open /app/next-env.d.ts" and crashed in a loop. A local Docker Desktop mount does not enforce this.
+        run: chmod -R a+rwX frontend
       - name: Start the web app
         run: |
           docker compose up -d frontend
