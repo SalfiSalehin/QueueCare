@@ -6,27 +6,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { errorMessage, keys } from "@/hooks/queries";
 import { ApiError } from "@/lib/api";
+import { registerSchema, type RegisterValues } from "@/lib/auth-schemas";
 import { authService } from "@/services/auth";
-
-const schema = z.object({
-  full_name: z.string().trim().min(1, "Enter your name").max(200),
-  email: z.string().min(1, "Enter your email").email("Enter a valid email address"),
-  password: z.string().min(12, "Use at least 12 characters"),
-});
-type Values = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterValues>({ resolver: zodResolver(registerSchema) });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);

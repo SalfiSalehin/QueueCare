@@ -6,28 +6,22 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/feedback";
 import { errorMessage, keys } from "@/hooks/queries";
 import { ApiError } from "@/lib/api";
+import { loginSchema, type LoginValues } from "@/lib/auth-schemas";
 import { safeNext } from "@/lib/redirect";
 import { authService } from "@/services/auth";
-
-const schema = z.object({
-  email: z.string().min(1, "Enter your email").email("Enter a valid email address"),
-  password: z.string().min(1, "Enter your password"),
-});
-type Values = z.infer<typeof schema>;
 
 function LoginForm() {
   const router = useRouter();
   const qc = useQueryClient();
   const next = safeNext(useSearchParams().get("next"));
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginValues>({ resolver: zodResolver(loginSchema) });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
