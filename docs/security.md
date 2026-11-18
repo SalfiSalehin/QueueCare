@@ -48,7 +48,7 @@
 
 - Rate limits on non-auth endpoints, per-user limits
 - Progressive lockout back-off, breached-password check, MFA
-- Dependency scanning in CI (`pip-audit` is in requirements; the workflow is Phase 10)
+- Dependency scanning: `pip-audit` runs in CI (clean on 2026-11-18); the frontend `npm audit` findings are triaged in [dependency-audit.md](dependency-audit.md)
 - Backup/restore procedure (Phase 11)
 - Independent security review or penetration test: **none performed**
 

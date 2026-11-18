@@ -55,7 +55,7 @@ export default function ClinicLayout({ children }: { children: ReactNode }) {
       <div className="mb-6">
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">{clinic.data.name}</h1>
         {staff && <p className="mt-1 text-sm text-slate-600">Signed in as {membership.role.replace("_", " ").toLowerCase()}</p>}
-        <nav aria-label="Clinic" className="mt-5 inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+        <nav aria-label="Clinic" className="mt-5 flex w-full gap-1 overflow-x-auto whitespace-nowrap rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200 sm:inline-flex sm:w-auto sm:flex-wrap sm:overflow-visible">
           {tabs.map((t) => {
             const active = pathname === t.href;
             return (

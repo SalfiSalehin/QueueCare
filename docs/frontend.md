@@ -163,3 +163,11 @@ The screens only collect input and show the API's answers; the API remains the a
 range checks). Not built: editing a doctor's name, department or lengths after creation; deleting departments or doctors; clinic
 settings (cancellation cutoff, booking horizon); creating accounts for staff (a person must register first); schedule validity dates.
 Browser tests: `e2e/setup.spec.ts`.
+
+
+## Dependencies and CI notes (2026-11-18)
+* `frontend/package-lock.json` is now committed and the Dockerfiles install from it (`npm ci`). Before that, every build resolved the newest
+  matching versions, and one CI run failed because the registry returned 404 for `rollup@4.68.5`. `package.json` therefore carries a
+  temporary `overrides` pin of `rollup` to `4.68.3` (the version that worked); remove it once newer releases install cleanly.
+* In CI the checkout belongs to the runner's user while the dev containers run as `node`, so the e2e and frontend jobs run
+  `chmod -R a+rwX frontend` first (otherwise `next dev` and `tsc` fail with EACCES). This does not occur on Docker Desktop.

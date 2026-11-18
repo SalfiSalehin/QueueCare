@@ -3,8 +3,7 @@
 **Smarter appointments. Shorter waiting. Better clinic management.**
 
 A multi-tenant clinic queue and appointment platform with a wait-time prediction model. The backend, database, ML
-pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The user interface is just starting**: a patient-facing slice (sign-in, join a clinic, book, cancel, queue view) type-checks
-and was exercised by hand in a browser; a staff queue board (reception and doctor, live updates) was used by hand in a browser; admin screens (insights, simulation lab) are covered by browser tests. The full system is available through its HTTP API (a runnable
+pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 16 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
 walkthrough script is included).
 
 > ⚠️ **Demonstration system.** All data is synthetic. QueueCare is not a clinical record system and claims no
@@ -21,11 +20,11 @@ walkthrough script is included).
 | Notifications (in-app, email, SMS) | Built with **mock providers only**: nothing is ever sent |
 | Analytics, slot-length advice, simulation lab | Built, tested |
 | Production Docker stack (HTTPS proxy, backups, restore drill) | Rehearsed locally on Docker Desktop; **never deployed to a real host** |
-| CI workflow | Written; **never run on GitHub** |
-| Frontend, patient slice (Next.js): auth, join clinic, book/cancel, live queue | Type-checks; booking flow checked by hand; no automated browser tests ([docs/frontend.md](docs/frontend.md)) |
-| Frontend staff queue board (F2) with WebSocket updates | Written; **not yet built or run**; its protocol logic passed 16 checks in a stand-in harness |
+| CI (GitHub Actions: backend, frontend, browser tests, production stack, secret scan) | **All five jobs pass** (run #4, 2026-11-18, about 11 minutes) |
+| Frontend, patient screens (Next.js): auth, join clinic, book/cancel, live queue | Built; browser-tested and used by hand ([docs/frontend.md](docs/frontend.md)) |
+| Frontend staff queue board with WebSocket updates | Built; browser-tested and used by hand, including live updates through the HTTPS proxy |
 | Frontend admin screens (insights, estimate quality, slot advice, simulation lab) | Browser-tested (every tab loads, the lab runs); numbers not reviewed against real data |
-| Frontend browser tests (Playwright, 14 tests) | **Pass** against the dev stack (2026-11-16); not in CI yet run |
+| Frontend browser tests (Playwright, 16 tests) | **Pass** on the dev stack and in CI on GitHub |
 | Production web-app image behind Caddy (F4) | Built and run locally behind Caddy on Docker Desktop (2026-11-16): landing, register/sign-in, API routing and live updates over HTTPS verified by hand; **not deployed to a real host, no browser tests against it** |
 | Clinic setup screens (departments, doctors, weekly hours, time off, team) | Used by the browser tests (16 pass on the dev stack) and type-checked; not tested on phones |
 | Platform-admin screens, screenshots, public demo | **Not built** |
