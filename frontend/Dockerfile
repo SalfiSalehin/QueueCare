@@ -4,7 +4,8 @@ WORKDIR /app
 FROM base AS dev
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json* ./
-RUN npm install
+# Reproducible installs: with a committed package-lock.json use exactly what it pins (npm ci); without one, resolve fresh.
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 # Create the folders that compose mounts volumes over, owned by `node`. Without this Docker creates them as root
 # and `next dev` dies with EACCES when it tries to write .next/cache.
@@ -23,7 +24,8 @@ ARG NEXT_PUBLIC_WS_URL=
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 COPY package.json package-lock.json* ./
-RUN npm install
+# Reproducible installs: with a committed package-lock.json use exactly what it pins (npm ci); without one, resolve fresh.
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 COPY . .
 RUN npm run build
 

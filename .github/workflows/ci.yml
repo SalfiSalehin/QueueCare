@@ -108,7 +108,11 @@ jobs:
         with: { name: e2e-results, path: frontend/e2e-results, if-no-files-found: ignore }
       - name: Logs on failure
         if: failure()
-        run: docker compose logs --tail=80 backend frontend
+        run: |
+          docker compose ps -a
+          echo "---- frontend ----"; docker compose logs --tail=60 frontend
+          echo "---- backend (health checks and truncated lines removed) ----"
+          docker compose logs --tail=300 backend | grep -v "health/live" | cut -c1-300 | tail -40
       - name: Tear down
         if: always()
         run: docker compose down -v

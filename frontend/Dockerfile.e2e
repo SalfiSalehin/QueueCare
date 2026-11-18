@@ -3,7 +3,8 @@ FROM node:22-bookworm
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 CI=1
 COPY package.json package-lock.json* ./
-RUN npm install
+# Reproducible installs: with a committed package-lock.json use exactly what it pins (npm ci); without one, resolve fresh.
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 RUN npx playwright install --with-deps chromium
 COPY . .
 CMD ["npx", "playwright", "test"]
