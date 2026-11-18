@@ -62,6 +62,10 @@ jobs:
           sed -i "s/CHANGE_ME_CSRF_SECRET/$(openssl rand -hex 32)/g" .env
       - name: Install dependencies (image build)
         run: docker compose build frontend
+      - name: Let the container write to the mounted frontend folder
+        # Same cause as in the e2e job: the checkout belongs to the runner's user, the container runs as `node`.
+        # TypeScript needs to write tsconfig.tsbuildinfo and Next.js next-env.d.ts.
+        run: chmod -R a+rwX frontend
       - name: Type check
         run: docker compose run --rm --no-deps frontend npm run typecheck
       - name: Unit tests
