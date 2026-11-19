@@ -12,7 +12,7 @@ function TokenCard({ clinicId, token }: { clinicId: string; token: MyToken }) {
   const e = estimate.data;
 
   return (
-    <article className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200/80">
+    <article className="overflow-hidden rounded-3xl bg-white shadow-xs ring-1 ring-slate-200/80">
       <div className="flex items-start justify-between gap-3 bg-ink px-6 py-6 text-white">
         <div>
           <p className="text-xs text-teal-100">Your token</p>

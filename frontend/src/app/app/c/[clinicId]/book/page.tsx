@@ -53,7 +53,7 @@ export default function BookPage() {
             <li key={d.id}>
               <button
                 type="button" onClick={() => choose(d.id)} aria-pressed={doctorId === d.id}
-                className={cn("flex w-full items-center gap-4 rounded-3xl bg-white p-4 text-left shadow-sm transition hover:shadow-lift", doctorId === d.id ? "ring-2 ring-teal-700" : "ring-1 ring-slate-200/80")}
+                className={cn("flex w-full items-center gap-4 rounded-3xl bg-white p-4 text-left shadow-xs transition hover:shadow-lift", doctorId === d.id ? "ring-2 ring-teal-700" : "ring-1 ring-slate-200/80")}
               >
                 <Avatar name={d.display_name} />
                 <span className="min-w-0">

@@ -20,7 +20,7 @@ export default function ClinicHome() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <section className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
+      <section className="rounded-3xl bg-white p-6 shadow-xs ring-1 ring-slate-200/80">
         <CalendarDays aria-hidden className="h-6 w-6 text-teal-700" />
         <h2 className="mt-3 font-display text-xl font-semibold text-ink">Next appointment</h2>
         {appts.isLoading ? <Spinner /> : next ? (
@@ -36,7 +36,7 @@ export default function ClinicHome() {
           </>
         )}
       </section>
-      <section className="rounded-3xl bg-ink p-6 text-white shadow-sm">
+      <section className="rounded-3xl bg-ink p-6 text-white shadow-xs">
         <Ticket aria-hidden className="h-6 w-6 text-ticket" />
         <h2 className="mt-3 font-display text-xl font-semibold">Today&apos;s queue</h2>
         {queue.isLoading ? <Spinner /> : active.length > 0 ? (

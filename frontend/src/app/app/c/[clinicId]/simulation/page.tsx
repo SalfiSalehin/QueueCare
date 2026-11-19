@@ -42,7 +42,7 @@ export default function SimulationPage() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {scenarios.map((s, i) => (
-          <section key={i} aria-label={`Scenario ${i + 1}`} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80">
+          <section key={i} aria-label={`Scenario ${i + 1}`} className="rounded-3xl bg-white p-5 shadow-xs ring-1 ring-slate-200/80">
             <div className="flex items-center justify-between gap-2">
               <label className="sr-only" htmlFor={`name-${i}`}>Scenario {i + 1} name</label>
               <input

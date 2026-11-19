@@ -7,7 +7,7 @@ const button = cva(
   {
     variants: {
       variant: {
-        primary: "bg-teal-700 px-4 py-2.5 text-white shadow-sm hover:bg-teal-800",
+        primary: "bg-teal-700 px-4 py-2.5 text-white shadow-xs hover:bg-teal-800",
         secondary: "border border-slate-300 bg-white px-4 py-2.5 text-slate-800 hover:bg-slate-100",
         ghost: "px-3 py-2 text-slate-700 hover:bg-slate-100",
         danger: "border border-red-300 bg-white px-4 py-2 text-red-700 hover:bg-red-50",

@@ -38,7 +38,7 @@ export default function Dashboard() {
               <li key={m.clinic_id}>
                 <Link
                   href={`/app/c/${m.clinic_id}`}
-                  className="flex items-center gap-4 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-lift"
+                  className="flex items-center gap-4 rounded-3xl bg-white p-5 shadow-xs ring-1 ring-slate-200/80 transition hover:-translate-y-0.5 hover:shadow-lift"
                 >
                   <Avatar name={name} />
                   <span className="min-w-0">

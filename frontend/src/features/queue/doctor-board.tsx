@@ -94,7 +94,7 @@ export function DoctorBoard({ clinicId, board, role, timeZone }: {
   const onAct = (tokenId: string, action: QueueAction) => act.mutate({ tokenId, action });
 
   return (
-    <section aria-label={`Queue for ${board.doctor_name}`} className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200/80">
+    <section aria-label={`Queue for ${board.doctor_name}`} className="rounded-3xl bg-white p-6 shadow-xs ring-1 ring-slate-200/80">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar name={board.doctor_name} />

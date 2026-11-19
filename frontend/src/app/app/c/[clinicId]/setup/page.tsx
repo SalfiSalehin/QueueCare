@@ -25,7 +25,7 @@ export default function SetupPage() {
   return (
     <div className="space-y-6">
       <PageTitle title="Clinic setup" subtitle="Departments, doctors and their hours, and your team. Changes apply to booking and the queue straight away." />
-      <div role="tablist" aria-label="Setup sections" className="inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+      <div role="tablist" aria-label="Setup sections" className="inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-xs ring-1 ring-slate-200">
         {TABS.map((t) => (
           <button
             key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}

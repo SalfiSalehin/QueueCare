@@ -25,7 +25,7 @@ export default function AppointmentsPage() {
           const cancellable = (a.status === "PENDING" || a.status === "CONFIRMED") && new Date(a.starts_at) > new Date();
           return (
             <li key={a.id}>
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/80">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-white p-4 shadow-xs ring-1 ring-slate-200/80">
                 <div className="flex items-center gap-4">
                   <div className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-mint text-center leading-tight text-teal-950">
                     <span>

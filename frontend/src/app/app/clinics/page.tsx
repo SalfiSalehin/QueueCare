@@ -27,7 +27,7 @@ export default function ClinicDirectory() {
       <ul className="grid gap-4 sm:grid-cols-2">
         {directory.data?.items.map((c) => (
           <li key={c.id}>
-            <div className="flex h-full flex-col rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200/80">
+            <div className="flex h-full flex-col rounded-3xl bg-white p-5 shadow-xs ring-1 ring-slate-200/80">
               <div className="flex items-center gap-3">
                 <Avatar name={c.name} />
                 <div className="min-w-0">

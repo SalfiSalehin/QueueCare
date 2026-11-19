@@ -37,7 +37,7 @@ export default function InsightsPage() {
     <div className="space-y-6">
       <PageTitle title="Insights" subtitle="Counts and statistics only. No patient names appear on this page." />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="tablist" aria-label="Insight sections" className="inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-sm ring-1 ring-slate-200">
+        <div role="tablist" aria-label="Insight sections" className="inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-xs ring-1 ring-slate-200">
           {TABS.map((t) => (
             <button
               key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
@@ -52,7 +52,7 @@ export default function InsightsPage() {
             {RANGES.map((r) => (
               <button
                 key={r.days} type="button" aria-pressed={days === r.days} onClick={() => setDays(r.days)}
-                className={cn("rounded-lg px-3 py-1.5 font-medium", days === r.days ? "bg-white text-ink shadow-sm" : "text-slate-600")}
+                className={cn("rounded-lg px-3 py-1.5 font-medium", days === r.days ? "bg-white text-ink shadow-xs" : "text-slate-600")}
               >
                 Last {r.label}
               </button>

@@ -1,12 +1,21 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+/* Tailwind 4 no longer reads tailwind.config.ts by itself: load it so the brand colours, fonts and `shadow-lift` stay. */
+@config "../../tailwind.config.ts";
+
+/*
+ * Tailwind 4 changed three defaults that this app relied on. Restored here so nothing looks different:
+ * a bare `border` was gray-200 (now the text colour), buttons showed a pointer cursor (now the arrow).
+ */
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button { border-color: var(--color-gray-200, currentColor); }
+  button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+}
 
 html { color-scheme: light; }
 body { @apply bg-paper font-sans text-slate-900 antialiased; }
 h1, h2, h3 { @apply font-display; }
 .tnum { font-variant-numeric: tabular-nums; }
-:focus-visible { @apply outline-none ring-2 ring-teal-600 ring-offset-2; }
+:focus-visible { @apply outline-hidden ring-2 ring-teal-600 ring-offset-2; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
