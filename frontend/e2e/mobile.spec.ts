@@ -95,4 +95,25 @@ test.describe("phone width", () => {
       await page.screenshot({ path: `${OUT}/admin-setup-hours.png`, fullPage: true });
     } finally { await ctx.close().catch(() => undefined); }
   });
+
+  test("the doctor editor and the clinic settings form fit a phone", async ({ browser }) => {
+    const seed = readSeed();
+    const ctx = await open(browser, "admin");
+    try {
+      const page = await ctx.newPage();
+      await page.goto(`/app/c/${seed.clinicId}/setup`);
+      await page.getByRole("button", { name: /^Edit details for/ }).first().click();
+      const editor = page.getByRole("form", { name: /^Edit details for/ });
+      await expect(editor).toBeVisible();
+      let o = await sidewaysOverflow(page);
+      expect(o.extra, `doctor editor is ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: `${OUT}/admin-setup-doctor-edit.png`, fullPage: true });
+
+      await page.getByRole("tab", { name: "Clinic" }).click();
+      await expect(page.getByRole("button", { name: "Save settings" })).toBeVisible();
+      o = await sidewaysOverflow(page);
+      expect(o.extra, `clinic settings are ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: `${OUT}/admin-setup-clinic.png`, fullPage: true });
+    } finally { await ctx.close().catch(() => undefined); }
+  });
 });

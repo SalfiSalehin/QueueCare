@@ -6,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Alert, EmptyState, Spinner, StatusBadge } from "@/components/ui/feedback";
 import { Field, SelectField } from "@/components/ui/field";
+import { DoctorEditForm } from "@/features/setup/doctor-edit";
 import { ScheduleEditor, TimeOffEditor } from "@/features/setup/schedule-editor";
 import { errorMessage } from "@/hooks/queries";
 import { useAllDoctors, useCreateDoctor, useDepartments, useMembers, useSetDoctorActive } from "@/hooks/setup";
 import { validateDoctor } from "@/lib/setup";
 import type { Department, Doctor } from "@/types/api";
 
-function DoctorRow({ clinicId, timeZone, doctor, department }: { clinicId: string; timeZone: string; doctor: Doctor; department?: Department }) {
+function DoctorRow({ clinicId, timeZone, doctor, department, departments }: {
+  clinicId: string; timeZone: string; doctor: Doctor; department?: Department; departments: Department[];
+}) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const setActive = useSetDoctorActive(clinicId);
   const panelId = `doctor-panel-${doctor.id}`;
   return (
@@ -30,7 +34,10 @@ function DoctorRow({ clinicId, timeZone, doctor, department }: { clinicId: strin
           </div>
           {doctor.is_active ? <StatusBadge status={doctor.status} /> : <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700">not accepting bookings</span>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" aria-expanded={editing} aria-label={`Edit details for ${doctor.display_name}`} onClick={() => setEditing((e) => !e)}>
+            {editing ? "Close editor" : "Edit details"}
+          </Button>
           <Button size="sm" variant="secondary" aria-expanded={open} aria-controls={panelId} aria-label={`Hours and time off for ${doctor.display_name}`} onClick={() => setOpen((o) => !o)}>
             {open ? "Hide hours" : "Hours and time off"}
           </Button>
@@ -44,6 +51,7 @@ function DoctorRow({ clinicId, timeZone, doctor, department }: { clinicId: strin
         </div>
       </div>
       {setActive.error && <Alert tone="error" className="mt-3">{errorMessage(setActive.error)}</Alert>}
+      {editing && <DoctorEditForm clinicId={clinicId} doctor={doctor} departments={departments} onDone={() => setEditing(false)} />}
       {open && (
         <div id={panelId} className="mt-4 grid gap-8 rounded-2xl bg-slate-50 p-4">
           <ScheduleEditor clinicId={clinicId} doctorId={doctor.id} timeZone={timeZone} />
@@ -123,7 +131,7 @@ export function DoctorsSection({ clinicId, timeZone }: { clinicId: string; timeZ
         {doctors.isError && <Alert tone="error" className="mt-4">{errorMessage(doctors.error)}</Alert>}
         {doctors.data && items.length === 0 && <div className="mt-4"><EmptyState title="No doctors yet">Add a department, then add your first doctor.</EmptyState></div>}
         <ul className="mt-2 divide-y divide-slate-100">
-          {items.map((d) => <DoctorRow key={d.id} clinicId={clinicId} timeZone={timeZone} doctor={d} department={byId.get(d.department_id)} />)}
+          {items.map((d) => <DoctorRow key={d.id} clinicId={clinicId} timeZone={timeZone} doctor={d} department={byId.get(d.department_id)} departments={depts} />)}
         </ul>
       </Card>
       <AddDoctor clinicId={clinicId} departments={depts} />

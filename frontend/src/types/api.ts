@@ -20,6 +20,16 @@ export interface ClinicSummary {
   id: string; name: string; slug: string; status: string; timezone: string; created_at: string;
 }
 
+export type QueuePolicy = "APPOINTMENT_FIRST" | "FIFO";
+export interface ClinicSettings {
+  booking_horizon_days: number; min_notice_minutes: number; cancellation_cutoff_hours: number;
+  queue_policy: QueuePolicy; walkin_priority_enabled: boolean;
+}
+export interface ClinicDetail extends ClinicSummary { settings: ClinicSettings }
+/** Fields the clinic-update endpoint accepts. Only what changed is sent; the API merges settings. */
+export interface ClinicPatch { name?: string; timezone?: string; settings?: Partial<ClinicSettings> }
+export interface DoctorPatch { display_name?: string; department_id?: string; default_slot_minutes?: number; buffer_minutes?: number }
+
 export type DoctorStatus = "AVAILABLE" | "BUSY" | "DELAYED" | "OFF_DUTY";
 export interface Doctor {
   id: string; department_id: string; display_name: string; default_slot_minutes: number; buffer_minutes: number;

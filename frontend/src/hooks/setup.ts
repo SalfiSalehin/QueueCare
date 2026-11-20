@@ -1,8 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keys } from "@/hooks/queries";
 import { setupService } from "@/services/setup";
-import type { ClinicRole, NewDoctor } from "@/types/api";
+import type { ClinicPatch, ClinicRole, DoctorPatch, NewDoctor } from "@/types/api";
 
 // Setup data changes only when an admin changes it. After a change, the lists the change touches are refetched; the
 // patient-facing doctor list (["doctors", id]) is refreshed too so the booking page never shows a stale roster.
@@ -52,6 +53,24 @@ export function useCreateDoctor(id: string) {
   return useMutation({
     mutationFn: (body: NewDoctor) => setupService.createDoctor(id, body),
     onSuccess: () => refresh(k.doctors(id)),
+  });
+}
+
+export function useUpdateDoctor(id: string) {
+  const refresh = useRefresh(id);
+  return useMutation({
+    mutationFn: (v: { doctorId: string; body: DoctorPatch }) => setupService.updateDoctor(id, v.doctorId, v.body),
+    onSuccess: () => refresh(k.doctors(id)),
+  });
+}
+
+/** Changing the clinic also refreshes the clinic itself, so the page title and time zone update everywhere. */
+export function useUpdateClinic(id: string) {
+  const qc = useQueryClient();
+  const refresh = useRefresh(id);
+  return useMutation({
+    mutationFn: (body: ClinicPatch) => setupService.updateClinic(id, body),
+    onSuccess: (clinic) => { qc.setQueryData(keys.clinic(id), clinic); refresh(keys.clinic(id), keys.directory); },
   });
 }
 

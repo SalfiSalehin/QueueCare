@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import type { ClinicRole, Department, Doctor, Member, NewDoctor, Page, Schedule, TimeOff } from "@/types/api";
+import type { ClinicDetail, ClinicPatch, ClinicRole, Department, Doctor, DoctorPatch, Member, NewDoctor, Page, Schedule, TimeOff } from "@/types/api";
 
 const c = (id: string) => `/clinics/${id}`;
 
@@ -13,6 +13,8 @@ export const setupService = {
 
   doctors: (id: string) => api.get<Page<Doctor>>(`${c(id)}/doctors`, { limit: 100, include_inactive: true }),
   createDoctor: (id: string, body: NewDoctor) => api.post<Doctor>(`${c(id)}/doctors`, body),
+  updateDoctor: (id: string, doctorId: string, body: DoctorPatch) => api.patch<Doctor>(`${c(id)}/doctors/${doctorId}`, body),
+  updateClinic: (id: string, body: ClinicPatch) => api.patch<ClinicDetail>(c(id), body),
   setDoctorActive: (id: string, doctorId: string, isActive: boolean) =>
     api.patch<Doctor>(`${c(id)}/doctors/${doctorId}`, { is_active: isActive }),
 

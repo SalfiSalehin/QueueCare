@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useClinicCtx } from "@/components/clinic-context";
 import { PageTitle } from "@/components/ui/card";
+import { ClinicSettingsSection } from "@/features/setup/clinic-settings";
 import { DepartmentsSection } from "@/features/setup/departments";
 import { DoctorsSection } from "@/features/setup/doctors";
 import { TeamSection } from "@/features/setup/team";
@@ -12,6 +13,7 @@ const TABS = [
   { id: "doctors", label: "Doctors" },
   { id: "departments", label: "Departments" },
   { id: "team", label: "Team" },
+  { id: "clinic", label: "Clinic" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -24,7 +26,7 @@ export default function SetupPage() {
 
   return (
     <div className="space-y-6">
-      <PageTitle title="Clinic setup" subtitle="Departments, doctors and their hours, and your team. Changes apply to booking and the queue straight away." />
+      <PageTitle title="Clinic setup" subtitle="Departments, doctors and their hours, your team and the clinic's own settings. Changes apply to booking and the queue straight away." />
       <div role="tablist" aria-label="Setup sections" className="inline-flex flex-wrap gap-1 rounded-2xl bg-white p-1 shadow-xs ring-1 ring-slate-200">
         {TABS.map((t) => (
           <button
@@ -38,6 +40,7 @@ export default function SetupPage() {
       {tab === "doctors" && <DoctorsSection clinicId={clinicId} timeZone={clinic.timezone} />}
       {tab === "departments" && <DepartmentsSection clinicId={clinicId} />}
       {tab === "team" && <TeamSection clinicId={clinicId} />}
+      {tab === "clinic" && <ClinicSettingsSection clinicId={clinicId} />}
     </div>
   );
 }

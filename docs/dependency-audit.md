@@ -1,28 +1,38 @@
-# Dependency audit (2026-11-18)
+# Dependency audit
 
+## Update, 2026-11-19: frontend upgrades done
+After the first audit (below), the four framework upgrades it called for were made one at a time, each checked by the type-check, the unit
+tests, the browser tests and a GitHub CI run before the next one started:
+
+| Upgrade | From to | Checked by |
+|---|---|---|
+| Vitest (with an explicit `vite` dev dependency, config renamed `vitest.config.mts`) | 2.1.9 to 5.1.1 | 46 unit tests; CI run #6 green |
+| Zod, with `@hookform/resolvers` | 3.x to 4.6.7, 3.x to 5.9.2 | 54 unit tests (8 new ones cover the sign-in and register rules); browser tests; CI run #7 green |
+| Next.js (Turbopack is now the default bundler for dev and build) | 15.5.29 to 16.4.6 | 31 browser tests; CI run #8 green, including the production build |
+| Tailwind CSS (`tailwind.config.ts` kept through `@config`; renamed `shadow-sm` to `shadow-xs`; v3 border colour and button cursor restored in `globals.css`) | 3.x to 4.x | 31 browser tests including 15 phone-width checks; CI run #9 green |
+
+`npm install` after the last upgrade reported **0 vulnerabilities** (all packages, including development tools). The three findings in the
+shipped app (the `postcss` copy inside Next, Zod 3, and the outdated Next) are gone with these upgrades.
+
+Still true:
+* `npm audit` is **not** a CI gate. It reports nothing today, so it could become one (a new advisory would then fail a push, which is the point
+  but also means a build can break without a code change). Decide deliberately before turning it on.
+* Not checked by a person: how the pages look after the Tailwind change. The tests catch overflow and broken flows, not a shadow that is now
+  a little lighter. Compare the main screens by eye.
+* Tailwind 4 needs Safari 16.4, Chrome 111 or Firefox 128 or newer; older browsers will not render the styles.
+* The temporary `rollup` pin in `package.json` (`overrides`) is not yet reviewed: Vite 8 may not use rollup at all. Check `npm ls rollup`
+  before removing it.
+
+## First audit (2026-11-18, kept for the record)
 Run by hand on the development stack. **Backend:** `pip-audit -r backend/requirements.txt` found **no known vulnerabilities** (CI runs the
 same check on every push). **Frontend:** `npm audit` reported 28 issues (9 moderate, 17 high, 2 critical) across all packages, but only
-**3 in what is shipped to users** (`npm audit --omit=dev`). Triage below. This is a risk assessment by the author, not an external review.
+**3 in what is shipped to users** (`npm audit --omit=dev`). This is a risk assessment by the author, not an external review.
 
-## In the shipped app (3 findings): accepted for now, tracked
-| Package | Severity | What it is | Why it is low risk here | Fix |
-|---|---|---|---|---|
-| `postcss` (a copy bundled inside `next`) | high | XSS via `</style>` in stringified CSS; reading `.map` files named by `sourceMappingURL` in a CSS comment | PostCSS only processes this project's own CSS at build time. No user-supplied CSS is ever parsed, in the browser or on the server. | Only by upgrading Next 15 to 16 (breaking). Planned as a deliberate migration. |
-| `zod` 3.x | high | Memory exhaustion when validating very large constrained collections | Used in two places: the sign-in and register forms, validating what the person typed into their own browser. No server data or uploaded files are validated with it, and nothing there is a collection. | Zod 4 (breaking API change, needs a matching `@hookform/resolvers`). Planned. |
-| (same `next` upgrade) | | Next 15.5.29 is also reported as outdated by its own dev server | | Next 16 migration, with the browser tests as the safety net. |
+* Shipped (3): a `postcss` copy bundled in `next` (XSS through `</style>` in stringified CSS; only this project's own CSS is processed, at build
+  time), `zod` 3.x (memory exhaustion on very large collections; used only for two forms), and an outdated Next.
+* Development and build tools only (25): `vitest`/`vite`/`esbuild` (one flagged critical: a prototype-pollution gadget needing control of the
+  test runner's configuration), the `tailwindcss` file-matching chain (regex slowness on this project's own files), and the ESLint chain.
+  These never reach a user's browser or the production image.
 
-## Development and build tools only (25 findings): not shipped
-These run on a developer's machine or in CI against this project's own files and never reach a user's browser or the production image.
-* **`vitest` / `vite` / `esbuild` / `@vitest/mocker` / `tinypool`** (moderate, one flagged critical): the test runner and its helpers.
-  The critical item is a prototype-pollution gadget in worker options; exploiting it needs an attacker to control how the test runner is
-  configured, which they cannot. Fix is a vitest major upgrade, to be done on its own with the 46 unit tests as the check.
-* **`tailwindcss` chain (`picomatch`, `micromatch`, `fast-glob`, `chokidar`, `readdirp`, `sucrase`)** (high): regex slowness when matching
-  file patterns against this project's own source files at build time. Fix is Tailwind 4 (breaking).
-* **ESLint chain (`@typescript-eslint/*`, `minimatch`, `eslint-config-next`)**: lint tooling. `npm audit fix` (no breaking changes) repairs the
-  `minimatch` part.
-
-## What is and is not done
-* Done: backend scan clean; the lockfile is committed so installs are reproducible; CI re-scans the backend every push.
-* Not done: the frontend upgrades above; `npm audit` is **not** a CI gate yet (it would fail today for the tooling findings). Revisit after the
-  Next 16, Zod 4, Tailwind 4 and vitest upgrades.
-* Not covered by this audit: the Docker base images (OS packages), a licence review, and a review of what npm packages do at install time.
+## Not covered by either audit
+The Docker base images (OS packages), a licence review, and a review of what npm packages do at install time.

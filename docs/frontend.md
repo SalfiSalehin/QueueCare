@@ -7,7 +7,7 @@
 > Not verified: the live queue view with an active token (needs the staff screens to check a patient in), other browsers,
 > mobile layouts, accessibility audits. There are no automated browser tests yet.
 
-Next.js 15 (App Router) + React 19 + TypeScript (strict), Tailwind CSS, react-hook-form + zod, TanStack Query.
+Next.js 16 (App Router, Turbopack) + React 19 + TypeScript (strict), Tailwind CSS 4, react-hook-form + zod 4, TanStack Query. Framework upgrades and how each was checked: [dependency-audit.md](dependency-audit.md).
 Light "clean clinical" theme (teal on white), system fonts, keyboard-friendly, visible focus, labelled form fields,
 `prefers-reduced-motion` respected. Every page repeats that this is a synthetic-data demonstration.
 
@@ -160,9 +160,19 @@ A **Setup** tab appears for clinic administrators only (`/app/c/{id}/setup`), wi
   cannot deactivate their own row here (the API also refuses removing the last active admin).
 
 The screens only collect input and show the API's answers; the API remains the authority (admin-only, tenant isolation, overlap and
-range checks). Not built: editing a doctor's name, department or lengths after creation; deleting departments or doctors; clinic
-settings (cancellation cutoff, booking horizon); creating accounts for staff (a person must register first); schedule validity dates.
-Browser tests: `e2e/setup.spec.ts`.
+range checks). Not built: deleting departments or doctors; creating accounts for staff (a person must register first); schedule validity
+dates. Browser tests: `e2e/setup.spec.ts`.
+
+### Editing doctors and clinic settings (2026-11-19)
+> **Status: written, not yet run end to end.** The pure helpers were type-checked and their unit tests executed outside the project (18 of 18
+> pass, using a stand-in for Vitest); the screens, the two new browser tests and the phone-width test have **not** been run yet.
+* **Edit details** on each doctor: name, department, appointment length and gap. Only fields that changed are sent. New lengths apply to
+  bookings made from then on; appointments already booked keep their time.
+* **Clinic tab** (admin only): clinic name, time zone, how far ahead patients can book, minimum notice, the patient cancel/reschedule cut-off
+  (staff are not limited by it), queue order and whether staff may mark a walk-in urgent. The API merges settings and records each change in
+  the audit log. Changing the time zone moves existing weekly hours to the new zone (they keep their clock times), which the screen warns about.
+* Helpers and rules: `src/lib/setup.ts` (`validateClinic`, `clinicChanges`, `doctorChanges`, `isValidTimeZone`); tests in `src/lib/setup.test.ts`.
+  Browser tests: `e2e/setup.spec.ts` (edit and refusal, then everything is put back) and `e2e/mobile.spec.ts` (both forms fit a phone).
 
 
 ## Dependencies and CI notes (2026-11-18)
@@ -171,3 +181,9 @@ Browser tests: `e2e/setup.spec.ts`.
   temporary `overrides` pin of `rollup` to `4.68.3` (the version that worked); remove it once newer releases install cleanly.
 * In CI the checkout belongs to the runner's user while the dev containers run as `node`, so the e2e and frontend jobs run
   `chmod -R a+rwX frontend` first (otherwise `next dev` and `tsc` fail with EACCES). This does not occur on Docker Desktop.
+
+## Phone width (written 2026-11-18, not yet run)
+`e2e/mobile.spec.ts` opens 14 screens at 390 x 844 (public, patient, reception, doctor, admin) and fails any page that scrolls sideways,
+naming the elements that stick out, plus one test that the clinic setup form fits on a phone. It also writes a full-page screenshot of each
+screen to `frontend/e2e-results/mobile/` for a person to look at. It checks layout overflow only: it cannot judge readability, tap-target
+comfort or taste, and it uses Chromium's phone emulation, not a real phone or another browser engine.
