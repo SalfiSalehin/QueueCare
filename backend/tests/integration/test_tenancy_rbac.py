@@ -157,6 +157,77 @@ def test_deactivated_membership_loses_access(owner_engine):
     assert admin_a.get(f"/api/v1/clinics/{clinic_a}/members").status_code == 404
 
 
+def _directory(client, **params):
+    r = client.get("/api/v1/clinics", params=params)
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def _names(client, **params) -> list[str]:
+    return [c["name"] for c in _directory(client, **params)["items"]]
+
+
+def _search_clinics(owner_engine):
+    """Five approved clinics, one signed-in admin. Names and addresses (slugs) are chosen so each test has one right answer."""
+    admin = new_client()
+    signup(admin, "searcher@example.com")
+    for slug, name in [("city-dental", "City Dental Care"), ("north-clinic", "North Family Clinic"),
+                       ("dental-hub", "Hub Dentistry"), ("odd-100", "Fifty% Off_Clinic"), ("quiet", "Quiet Pending")]:
+        create_active_clinic(owner_engine, admin, slug, name)
+    return admin
+
+
+def test_directory_without_a_search_lists_everything_by_name(owner_engine):
+    admin = _search_clinics(owner_engine)
+    assert _names(admin) == ["City Dental Care", "Fifty% Off_Clinic", "Hub Dentistry", "North Family Clinic", "Quiet Pending"]
+    assert _names(admin, q="") == _names(admin) and _names(admin, q="   ") == _names(admin)
+
+
+def test_directory_search_matches_every_word_in_name_or_address(owner_engine):
+    admin = _search_clinics(owner_engine)
+    assert _names(admin, q="dental") == ["City Dental Care", "Hub Dentistry"]   # the second matches by its address, dental-hub
+    assert _names(admin, q="CITY") == ["City Dental Care"]                       # ignores case
+    assert _names(admin, q="  city   care ") == ["City Dental Care"]             # every word must match; extra spaces are ignored
+    assert _names(admin, q="city north") == []
+    assert _names(admin, q="family") == ["North Family Clinic"]
+    assert _names(admin, q="north-clinic") == ["North Family Clinic"]            # the address is searched as well
+    result = _directory(admin, q="zzzz")
+    assert result["items"] == [] and result["total"] == 0
+
+
+def test_directory_search_puts_names_starting_with_the_word_first(owner_engine):
+    admin = _search_clinics(owner_engine)
+    # Every clinic has an "n" somewhere. "North ..." starts with it, so it leads; the rest stay in name order.
+    assert _names(admin, q="n") == ["North Family Clinic", "City Dental Care", "Fifty% Off_Clinic", "Hub Dentistry", "Quiet Pending"]
+
+
+def test_directory_search_treats_wildcards_as_text(owner_engine):
+    admin = _search_clinics(owner_engine)
+    assert _names(admin, q="%") == ["Fifty% Off_Clinic"]
+    assert _names(admin, q="_") == ["Fifty% Off_Clinic"]
+    assert _directory(admin, q="\\")["total"] == 0
+    assert _directory(admin, q="c_ty")["total"] == 0                            # "_" is not "any one character"
+
+
+def test_directory_search_pages_and_stays_bounded(owner_engine):
+    admin = _search_clinics(owner_engine)
+    first = _directory(admin, q="clinic", limit=1)
+    assert first["total"] == 2 and len(first["items"]) == 1
+    second = _directory(admin, q="clinic", limit=1, offset=1)
+    assert second["items"][0]["id"] != first["items"][0]["id"]
+    assert admin.get("/api/v1/clinics", params={"q": "x" * 101}).status_code == 422
+    assert _directory(admin, q=" ".join(["clinic"] * 14))["total"] == 2          # only the first five words count; 14 is not an error
+
+
+def test_directory_search_never_shows_unapproved_clinics(owner_engine):
+    admin = _search_clinics(owner_engine)
+    r = admin.post("/api/v1/clinics", json={"name": "Hidden Waiting Clinic", "slug": "hidden-waiting"}, headers=csrf(admin))
+    assert r.status_code == 201
+    assert _directory(admin, q="hidden")["total"] == 0
+    assert _directory(admin, q="waiting")["total"] == 0
+    assert _directory(admin, q="clinic")["total"] == 2                           # still only the approved ones
+
+
 def test_directory_pagination_is_bounded(owner_engine):
     admin_a, _, _, _ = _two_clinics(owner_engine)
     page = admin_a.get("/api/v1/clinics?limit=1&offset=0").json()

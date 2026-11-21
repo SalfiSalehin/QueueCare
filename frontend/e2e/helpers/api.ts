@@ -5,9 +5,10 @@ import { BASE_URL } from "./seed";
 export class Session {
   private constructor(readonly ctx: APIRequestContext) {}
 
-  static async create(): Promise<Session> {
+  /** `storageState` is a saved sign-in (a file from global setup), so a test can act as that person without logging in again. */
+  static async create(storageState?: string): Promise<Session> {
     // Through the web app's own /api/v1 proxy, with the page's origin, so the same CORS/CSRF rules apply as in a browser.
-    return new Session(await request.newContext({ baseURL: BASE_URL, extraHTTPHeaders: { Origin: BASE_URL } }));
+    return new Session(await request.newContext({ baseURL: BASE_URL, extraHTTPHeaders: { Origin: BASE_URL }, storageState }));
   }
 
   private async csrf(): Promise<string | undefined> {

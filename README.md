@@ -24,10 +24,11 @@ walkthrough script is included).
 | Frontend, patient screens (Next.js): auth, join clinic, book/cancel, live queue | Built; browser-tested and used by hand ([docs/frontend.md](docs/frontend.md)) |
 | Frontend staff queue board with WebSocket updates | Built; browser-tested and used by hand, including live updates through the HTTPS proxy |
 | Frontend admin screens (insights, estimate quality, slot advice, simulation lab) | Browser-tested (every tab loads, the lab runs); numbers not reviewed against real data |
-| Frontend browser tests (Playwright) | 36 **pass** on the dev stack (the 3 platform-screen tests were added after CI run #10; their CI run is still to be confirmed) |
+| Frontend browser tests (Playwright) | 39 **pass** on the dev stack (2026-11-22); 36 confirmed in CI so far, the 3 for the clinic search are not yet |
 | Production web-app image behind Caddy (F4) | Built and run locally behind Caddy on Docker Desktop (2026-11-16): landing, register/sign-in, API routing and live updates over HTTPS verified by hand; **not deployed to a real host, no browser tests against it** |
 | Clinic setup screens (departments, doctors incl. editing, weekly hours, time off, team, clinic settings) | Covered by browser tests that pass in CI (run #10); phone-width checks pass; not tested on a real phone |
-| Platform-admin screens (approve, decline, suspend, reopen clinics; activity log) | **Works end to end** on the dev stack (browser tests pass); not yet seen by eye or in CI ([docs/frontend.md](docs/frontend.md)) |
+| Platform-admin screens (approve, decline, suspend, reopen clinics; activity log) | **Works end to end** (browser tests pass on the dev stack and in CI); not yet looked at by eye ([docs/frontend.md](docs/frontend.md)) |
+| Find a clinic search (by name or address word, paged) | **Works end to end**: 3 new browser tests pass on the dev stack (it is searched through the real API); the 6 new backend tests, the 7 new unit tests, the typecheck and the browser tests all pass locally; CI not yet confirmed; not looked at by eye ([docs/frontend.md](docs/frontend.md)) |
 | Screenshots, public demo | **Not built** |
 
 Full list of gaps: [docs/limitations.md](docs/limitations.md).

@@ -93,7 +93,7 @@ syntax only; not yet seen by the author. No behaviour was changed except a new `
 | `/` | anyone | Landing page with honest limits |
 | `/register`, `/login` | anyone | Account creation and sign-in (server enforces password rules, lockout and rate limits) |
 | `/app` | signed in | Your clinics |
-| `/app/clinics` | signed in | Directory of active clinics; join as a patient |
+| `/app/clinics` | signed in | Search and browse active clinics (12 at a time); join as a patient |
 | `/app/c/{id}` | patient | Next appointment and today's queue |
 | `/app/c/{id}/book` | patient | Pick doctor, pick a slot (clinic time zone), book; 409 "slot taken" shows alternative doctors |
 | `/app/c/{id}/appointments` | patient | List and cancel |
@@ -140,7 +140,7 @@ schedule: run `python scripts/demo_walkthrough.py ...` once (see its docstring);
 in the browser, find that clinic under "Find a clinic", join it and book.
 
 ## Known gaps
-The platform-admin screens pass their browser tests on the dev stack but have not been looked at by eye (see below); the staff board has no token history; the patient pages still poll instead of using WebSocket; no password reset or email verification pages; no dark mode;
+The platform-admin screens pass their browser tests (dev stack and CI) but have not been looked at by eye (see below); the staff board has no token history; the patient pages still poll instead of using WebSocket; no password reset or email verification pages; no dark mode;
 no browser E2E tests (Playwright) yet; no production image or Caddy routing for the frontend yet; not audited with an
 accessibility tool.
 
@@ -176,9 +176,25 @@ dates. Browser tests: `e2e/setup.spec.ts`.
   Browser tests: `e2e/setup.spec.ts` (edit and refusal, then everything is put back) and `e2e/mobile.spec.ts` (both forms fit a phone).
 
 
+### Find a clinic search (2026-11-22)
+> **Status: the browser tests pass (39 of 39 on the dev stack, 2026-11-22),** including 3 new ones in `e2e/search.spec.ts` and the patient
+> booking test, which now finds its clinic by searching. Also passing locally: the 6 new backend tests (`tests/integration/test_tenancy_rbac.py`,
+> 19 pass in that file), the 7 new unit tests (`src/lib/directory.test.ts`, 85 in all) and the typecheck. Not yet confirmed in CI; the page has not been looked at by eye.
+* **What it does:** a search box on `/app/clinics`. Every word typed must appear in the clinic's **name or address** (the slug, e.g. `city-dental`),
+  ignoring case and extra spaces. Clinics whose name starts with the first word come first, then A to Z. The list shows 12 clinics, and
+  **Show more clinics** adds 12 at a time (up to 100). A line under the box says what is shown ("Showing 12 of 30 clinics matching ..."); an empty
+  result offers **Clear search**. The search waits 300 ms after the last keystroke, and the old list stays on screen while the next one loads.
+* **API:** `GET /api/v1/clinics?q=...&limit=&offset=` (signed in). `q` is at most 100 characters (longer: 422) and only the first 5 words count.
+  `%`, `_` and `\` are searched as ordinary characters. Only ACTIVE clinics are ever returned, so waiting or suspended clinics cannot be found.
+* **Not there:** searching by place, suburb or specialty. A clinic has only a name, an address-style slug and a time zone, so there is nothing
+  else to search; that needs new clinic fields (a backend change). The search is a plain substring match with no index: fine for hundreds of
+  clinics, and a `pg_trgm` index would be the next step at many thousands.
+* **Side effects:** the e2e patient test now finds its clinic by searching (the dev database collects test clinics, so a plain list would stop
+  showing it). The dashboard still loads the unfiltered directory (up to 100) to turn clinic ids into names.
+
 ### Platform administration (2026-11-20)
-> **Status: browser tests pass on the dev stack (36 of 36, 2026-11-22).** That includes 3 for these screens (`e2e/platform.spec.ts` x2, one
-> phone-width test in `e2e/mobile.spec.ts`). Not yet confirmed in CI, and the pages have not been looked at by eye.
+> **Status: browser tests pass on the dev stack and in CI (36 of 36, 2026-11-22).** That includes 3 for these screens (`e2e/platform.spec.ts` x2, one
+> phone-width test in `e2e/mobile.spec.ts`). The pages have not been looked at by eye.
 * **Where:** `/app/platform`, reached from a **Platform** link in the main menu that only a user with the `SUPER_ADMIN` platform role sees. Anyone
   else who types the address sees a refusal, and the API refuses their requests anyway (403).
 * **Clinics tab:** filter by *Waiting for approval* (the first view), *Open*, *Suspended* or *All*, each with a count. Per clinic: **Approve**

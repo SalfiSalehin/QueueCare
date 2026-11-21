@@ -15,6 +15,8 @@ test("a new patient registers, joins a clinic, books a time and cancels it", asy
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect(page.getByRole("heading", { name: "Find a clinic" })).toBeVisible();
+  // The directory is searched, not scrolled: other runs leave clinics behind, so ask for this one by name.
+  await page.getByLabel("Search clinics").fill(seed.clinicName);
   const card = page.getByRole("listitem").filter({ hasText: seed.clinicName });
   await card.getByRole("button", { name: "Join as a patient" }).click();
   await expect(page).toHaveURL(new RegExp(`/app/c/${seed.clinicId}$`));

@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -59,16 +59,35 @@ def _summary(c: Clinic) -> ClinicSummary:
                          created_at=c.created_at)
 
 
+MAX_SEARCH_WORDS = 5
+
+
+def _like(term: str, *, prefix_only: bool = False) -> str:
+    """A LIKE pattern for a literal term: the user's %, _ and backslash are text, never wildcards."""
+    escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return escaped + "%" if prefix_only else "%" + escaped + "%"
+
+
 @router.get("", response_model=Page[ClinicSummary])
-def list_clinics(limit: int = 20, offset: int = 0, db: Session = Depends(get_db),
+def list_clinics(limit: int = 20, offset: int = 0,
+                 q: str | None = Query(default=None, max_length=100, description="Words to look for in the clinic name or address"),
+                 db: Session = Depends(get_db),
                  _ctx: AuthContext = Depends(get_auth_context)) -> Page[ClinicSummary]:
-    """Public directory: only ACTIVE clinics, minimal fields."""
+    """Public directory: only ACTIVE clinics, minimal fields. `q` keeps clinics whose name or address (slug) contains
+    every word, ignoring case; clinics whose name starts with the first word come first."""
     limit = max(1, min(limit, 100))
     offset = max(0, offset)
     base = select(Clinic).where(Clinic.status == ClinicStatus.ACTIVE)
-    from sqlalchemy import func
+    words = (q or "").split()[:MAX_SEARCH_WORDS]
+    for word in words:
+        like = _like(word)
+        base = base.where(or_(Clinic.name.ilike(like, escape="\\"), Clinic.slug.ilike(like, escape="\\")))
+    order = [Clinic.name, Clinic.id]
+    if words:
+        starts = Clinic.name.ilike(_like(words[0], prefix_only=True), escape="\\")
+        order = [case((starts, 0), else_=1), *order]
     total = db.scalar(select(func.count()).select_from(base.subquery())) or 0
-    rows = db.scalars(base.order_by(Clinic.name).limit(limit).offset(offset)).all()
+    rows = db.scalars(base.order_by(*order).limit(limit).offset(offset)).all()
     return Page(items=[_summary(c) for c in rows], total=total, limit=limit, offset=offset)
 
 

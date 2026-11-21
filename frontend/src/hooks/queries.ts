@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/lib/api";
 import { appointmentService } from "@/services/appointments";
 import { authService } from "@/services/auth";
@@ -22,7 +22,14 @@ export const keys = {
 export const useMe = () =>
   useQuery({ queryKey: keys.me, queryFn: authService.me, staleTime: 60_000, retry: false });
 
-export const useDirectory = () => useQuery({ queryKey: keys.directory, queryFn: clinicService.directory });
+/** Open clinics. With no arguments it is the whole directory (up to 100), as the dashboard uses it. Searches share the "clinics" key
+ *  prefix, so a status change that invalidates the directory refreshes them too. */
+export const useDirectory = (q = "", limit = 100) =>
+  useQuery({
+    queryKey: [...keys.directory, { q, limit }] as const,
+    queryFn: () => clinicService.directory(q, limit),
+    placeholderData: keepPreviousData,          // keep the old list on screen while the next search loads, so it does not flash
+  });
 
 export const useClinic = (clinicId: string) =>
   useQuery({ queryKey: keys.clinic(clinicId), queryFn: () => clinicService.get(clinicId) });
