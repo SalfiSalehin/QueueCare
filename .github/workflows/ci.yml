@@ -72,6 +72,10 @@ jobs:
         run: docker compose run --rm --no-deps frontend npm test
       - name: Production build
         run: docker compose run --rm --no-deps -e NEXT_TELEMETRY_DISABLED=1 frontend npm run build
+      - name: Dependency vulnerability scan (npm audit)
+        # Only what ships to users (--omit=dev) and only high or critical advisories, so a minor finding in a build tool cannot block a push.
+        # Like pip-audit above, this can fail without a code change when a new advisory is published: that is the point of the check.
+        run: docker compose run --rm --no-deps frontend npm audit --omit=dev --audit-level=high
 
   # Real browser, real API, real database. Added in F4 and never run on GitHub; treat its first run as a test of this job.
   e2e:

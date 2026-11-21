@@ -15,13 +15,15 @@ tests, the browser tests and a GitHub CI run before the next one started:
 shipped app (the `postcss` copy inside Next, Zod 3, and the outdated Next) are gone with these upgrades.
 
 Still true:
-* `npm audit` is **not** a CI gate. It reports nothing today, so it could become one (a new advisory would then fail a push, which is the point
-  but also means a build can break without a code change). Decide deliberately before turning it on.
+* `npm audit --omit=dev --audit-level=high` is a CI step (frontend job, added 2026-11-22), next to the backend's `pip-audit`. It looks only at
+  what ships to users and fails only on **high or critical** advisories, so a minor finding in a development tool cannot block a push. It can
+  still fail without a code change when a new advisory is published; that is the point, and the fix is then to upgrade or review the package.
+  Its first run on GitHub has not happened yet. To loosen it, drop the flags or delete the step.
 * Not checked by a person: how the pages look after the Tailwind change. The tests catch overflow and broken flows, not a shadow that is now
   a little lighter. Compare the main screens by eye.
 * Tailwind 4 needs Safari 16.4, Chrome 111 or Firefox 128 or newer; older browsers will not render the styles.
-* The temporary `rollup` pin in `package.json` (`overrides`) is not yet reviewed: Vite 8 may not use rollup at all. Check `npm ls rollup`
-  before removing it.
+* The temporary `rollup` pin in `package.json` (`overrides`) was removed on 2026-11-22: `npm ls rollup` showed nothing installed (Vite 8 does not
+  use it), so the pin did nothing.
 
 ## First audit (2026-11-18, kept for the record)
 Run by hand on the development stack. **Backend:** `pip-audit -r backend/requirements.txt` found **no known vulnerabilities** (CI runs the

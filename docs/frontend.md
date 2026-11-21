@@ -179,7 +179,7 @@ dates. Browser tests: `e2e/setup.spec.ts`.
 ### Find a clinic search (2026-11-22)
 > **Status: the browser tests pass (39 of 39 on the dev stack, 2026-11-22),** including 3 new ones in `e2e/search.spec.ts` and the patient
 > booking test, which now finds its clinic by searching. Also passing locally: the 6 new backend tests (`tests/integration/test_tenancy_rbac.py`,
-> 19 pass in that file), the 7 new unit tests (`src/lib/directory.test.ts`, 85 in all) and the typecheck. Not yet confirmed in CI; the page has not been looked at by eye.
+> 19 pass in that file), the 7 new unit tests (`src/lib/directory.test.ts`, 85 in all) and the typecheck. Confirmed in CI too; the page has not been looked at by eye.
 * **What it does:** a search box on `/app/clinics`. Every word typed must appear in the clinic's **name or address** (the slug, e.g. `city-dental`),
   ignoring case and extra spaces. Clinics whose name starts with the first word come first, then A to Z. The list shows 12 clinics, and
   **Show more clinics** adds 12 at a time (up to 100). A line under the box says what is shown ("Showing 12 of 30 clinics matching ..."); an empty
@@ -209,8 +209,8 @@ dates. Browser tests: `e2e/setup.spec.ts`.
 
 ## Dependencies and CI notes (2026-11-18)
 * `frontend/package-lock.json` is now committed and the Dockerfiles install from it (`npm ci`). Before that, every build resolved the newest
-  matching versions, and one CI run failed because the registry returned 404 for `rollup@4.68.5`. `package.json` therefore carries a
-  temporary `overrides` pin of `rollup` to `4.68.3` (the version that worked); remove it once newer releases install cleanly.
+  matching versions, and one CI run failed because the registry returned 404 for `rollup@4.68.5`. `package.json` carried a
+  temporary `overrides` pin of `rollup` to `4.68.3`; it was removed on 2026-11-22 (nothing installed uses `rollup` any more).
 * In CI the checkout belongs to the runner's user while the dev containers run as `node`, so the e2e and frontend jobs run
   `chmod -R a+rwX frontend` first (otherwise `next dev` and `tsc` fail with EACCES). This does not occur on Docker Desktop.
 
