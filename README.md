@@ -3,7 +3,7 @@
 **Smarter appointments. Shorter waiting. Better clinic management.**
 
 A multi-tenant clinic queue and appointment platform with a wait-time prediction model. The backend, database, ML
-pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 16 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
+pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 33 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
 walkthrough script is included).
 
 > ⚠️ **Demonstration system.** All data is synthetic. QueueCare is not a clinical record system and claims no
@@ -24,10 +24,11 @@ walkthrough script is included).
 | Frontend, patient screens (Next.js): auth, join clinic, book/cancel, live queue | Built; browser-tested and used by hand ([docs/frontend.md](docs/frontend.md)) |
 | Frontend staff queue board with WebSocket updates | Built; browser-tested and used by hand, including live updates through the HTTPS proxy |
 | Frontend admin screens (insights, estimate quality, slot advice, simulation lab) | Browser-tested (every tab loads, the lab runs); numbers not reviewed against real data |
-| Frontend browser tests (Playwright, 16 tests) | **Pass** on the dev stack and in CI on GitHub |
+| Frontend browser tests (Playwright) | 36 **pass** on the dev stack (the 3 platform-screen tests were added after CI run #10; their CI run is still to be confirmed) |
 | Production web-app image behind Caddy (F4) | Built and run locally behind Caddy on Docker Desktop (2026-11-16): landing, register/sign-in, API routing and live updates over HTTPS verified by hand; **not deployed to a real host, no browser tests against it** |
-| Clinic setup screens (departments, doctors, weekly hours, time off, team) | Used by the browser tests (16 pass on the dev stack) and type-checked; not tested on phones |
-| Platform-admin screens, screenshots, public demo | **Not built** |
+| Clinic setup screens (departments, doctors incl. editing, weekly hours, time off, team, clinic settings) | Covered by browser tests that pass in CI (run #10); phone-width checks pass; not tested on a real phone |
+| Platform-admin screens (approve, decline, suspend, reopen clinics; activity log) | **Works end to end** on the dev stack (browser tests pass); not yet seen by eye or in CI ([docs/frontend.md](docs/frontend.md)) |
+| Screenshots, public demo | **Not built** |
 
 Full list of gaps: [docs/limitations.md](docs/limitations.md).
 

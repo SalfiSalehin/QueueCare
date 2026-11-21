@@ -9,6 +9,9 @@ const dir = path.resolve(__dirname, "..");
 export const seedFile = path.join(dir, ".seed.json");
 export const authFile = (role: Role): string => path.join(dir, ".auth", `${role}.json`);
 
+/** The platform administrator (created with `python -m app.cli create-superadmin`), signed in once by global setup. */
+export const platformAuthFile = path.join(dir, ".auth", "platform.json");
+
 export type Role = "admin" | "reception" | "doctor" | "patient";
 
 export interface Seed {

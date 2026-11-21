@@ -140,7 +140,7 @@ schedule: run `python scripts/demo_walkthrough.py ...` once (see its docstring);
 in the browser, find that clinic under "Find a clinic", join it and book.
 
 ## Known gaps
-No platform-admin screens (and the clinic setup screens below are unverified); the staff board has no token history; the patient pages still poll instead of using WebSocket; no password reset or email verification pages; no dark mode;
+The platform-admin screens pass their browser tests on the dev stack but have not been looked at by eye (see below); the staff board has no token history; the patient pages still poll instead of using WebSocket; no password reset or email verification pages; no dark mode;
 no browser E2E tests (Playwright) yet; no production image or Caddy routing for the frontend yet; not audited with an
 accessibility tool.
 
@@ -164,8 +164,9 @@ range checks). Not built: deleting departments or doctors; creating accounts for
 dates. Browser tests: `e2e/setup.spec.ts`.
 
 ### Editing doctors and clinic settings (2026-11-19)
-> **Status: written, not yet run end to end.** The pure helpers were type-checked and their unit tests executed outside the project (18 of 18
-> pass, using a stand-in for Vitest); the screens, the two new browser tests and the phone-width test have **not** been run yet.
+> **Status: verified.** `npm run typecheck` is clean, 63 unit tests pass, and all 33 browser tests pass in the e2e job of GitHub CI run #10 (the
+> first local run found one real bug, a "Saved." message erased when the form restarted after saving; it is fixed and covered by
+> `e2e/setup.spec.ts`). Not checked by a person: how the two new screens look and feel.
 * **Edit details** on each doctor: name, department, appointment length and gap. Only fields that changed are sent. New lengths apply to
   bookings made from then on; appointments already booked keep their time.
 * **Clinic tab** (admin only): clinic name, time zone, how far ahead patients can book, minimum notice, the patient cancel/reschedule cut-off
@@ -174,6 +175,21 @@ dates. Browser tests: `e2e/setup.spec.ts`.
 * Helpers and rules: `src/lib/setup.ts` (`validateClinic`, `clinicChanges`, `doctorChanges`, `isValidTimeZone`); tests in `src/lib/setup.test.ts`.
   Browser tests: `e2e/setup.spec.ts` (edit and refusal, then everything is put back) and `e2e/mobile.spec.ts` (both forms fit a phone).
 
+
+### Platform administration (2026-11-20)
+> **Status: browser tests pass on the dev stack (36 of 36, 2026-11-22).** That includes 3 for these screens (`e2e/platform.spec.ts` x2, one
+> phone-width test in `e2e/mobile.spec.ts`). Not yet confirmed in CI, and the pages have not been looked at by eye.
+* **Where:** `/app/platform`, reached from a **Platform** link in the main menu that only a user with the `SUPER_ADMIN` platform role sees. Anyone
+  else who types the address sees a refusal, and the API refuses their requests anyway (403).
+* **Clinics tab:** filter by *Waiting for approval* (the first view), *Open*, *Suspended* or *All*, each with a count. Per clinic: **Approve**
+  (no warning), **Decline** and **Suspend** (both ask first: staff and patients cannot use the clinic until it is open again, it leaves the list
+  patients search, its data is kept), **Reactivate**. A clinic's status decides which buttons appear (`clinicActions`).
+* **Activity tab:** the audit events with the clinic's name and time, from the latest 200 the API returns. By default only clinic changes are shown
+  (registered, status changed, staff added, patient joined); a switch adds sign-ins and account events. The API returns ids only (no old/new status
+  and no actor name), so the screen shows what the API gives. Showing who did it and what changed would need a backend change.
+* **Limits:** the clinic list shows the 200 most recent clinics (an API limit; a note appears when it is reached). There is no search.
+* The browser tests sign in the platform admin once in global setup (`e2e/.auth/platform.json`, git-ignored) and create a fresh waiting clinic
+  per run through the API, so they leave one extra clinic behind in the development database each run.
 
 ## Dependencies and CI notes (2026-11-18)
 * `frontend/package-lock.json` is now committed and the Dockerfiles install from it (`npm ci`). Before that, every build resolved the newest

@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { Session } from "./helpers/api";
 import { startForward } from "./helpers/forward";
-import { authFile, BASE_URL, PASSWORD, seedFile, type Role, type Seed } from "./helpers/seed";
+import { authFile, BASE_URL, PASSWORD, platformAuthFile, seedFile, type Role, type Seed } from "./helpers/seed";
 
 interface Created { id: string }
 
@@ -47,6 +47,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   const root = await Session.create();
   await root.call("POST", "/auth/login", { email: platformEmail, password: platformPassword });
   await root.call("POST", `/platform/clinics/${clinic.id}/status`, { status: "ACTIVE" });
+  await root.saveState(platformAuthFile);
   await root.close();
 
   const base = `/clinics/${clinic.id}`;

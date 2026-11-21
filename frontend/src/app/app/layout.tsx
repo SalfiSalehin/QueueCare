@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, LogOut, Search } from "lucide-react";
+import { Building2, LogOut, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
@@ -11,11 +11,13 @@ import { Alert, Spinner } from "@/components/ui/feedback";
 import { useLogout, useMe } from "@/hooks/queries";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { isPlatformAdmin } from "@/lib/platform";
 
 const NAV = [
   { href: "/app", label: "My clinics", Icon: Building2, active: (p: string) => p === "/app" || p.startsWith("/app/c/") },
   { href: "/app/clinics", label: "Find a clinic", Icon: Search, active: (p: string) => p.startsWith("/app/clinics") },
 ];
+const PLATFORM_NAV = { href: "/app/platform", label: "Platform", Icon: ShieldCheck, active: (p: string) => p.startsWith("/app/platform") };
 
 function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
@@ -45,6 +47,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   const user = me.data.user;
+  // Only platform administrators get the Platform link; the API refuses everyone else regardless.
+  const nav = isPlatformAdmin(user) ? [...NAV, PLATFORM_NAV] : NAV;
   const signOut = () => logout.mutate(undefined, { onSettled: () => router.replace("/login") });
 
   return (
@@ -55,7 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <aside className="hidden flex-col bg-ink p-5 text-white lg:flex">
           <Logo href="/app" tone="light" />
           <nav aria-label="Main" className="mt-10 space-y-1">
-            {NAV.map(({ href, label, Icon, active }) => (
+            {nav.map(({ href, label, Icon, active }) => (
               <Link
                 key={href} href={href} aria-current={active(pathname) ? "page" : undefined}
                 className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
@@ -89,7 +93,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <button type="button" onClick={signOut} className="rounded-lg border border-white/20 px-3 py-1.5 text-xs font-medium hover:bg-white/10">Sign out</button>
           </div>
           <nav aria-label="Main" className="flex gap-1 px-3 pb-3 text-sm">
-            {NAV.map(({ href, label, active }) => (
+            {nav.map(({ href, label, active }) => (
               <Link key={href} href={href} aria-current={active(pathname) ? "page" : undefined}
                 className={cn("rounded-lg px-3 py-1.5", active(pathname) ? "bg-white/15 font-medium" : "text-teal-100/80")}>{label}</Link>
             ))}

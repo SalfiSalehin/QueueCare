@@ -84,7 +84,7 @@ curl http://localhost:8000/health/ready
 | Backend tests | `docker compose run --rm backend pytest` |
 | Synthetic end-to-end demo (through the real API) | `python scripts/demo_walkthrough.py --platform-email you@example.com` (see its docstring) |
 | Generate dataset, train, promote model | `docker compose run --rm backend python -m ml.training.run --seed 42 --promote` |
-| Browser E2E tests | `docker compose --profile e2e run --rm e2e` (needs a platform admin; see [frontend.md](frontend.md)). 14 tests pass on the dev stack (2026-11-16) |
+| Browser E2E tests | `docker compose --profile e2e run --rm e2e` (needs a platform admin; see [frontend.md](frontend.md)). 33 tests pass in CI (run #10, 2026-11-20) |
 
 ## Security notes for developers
 

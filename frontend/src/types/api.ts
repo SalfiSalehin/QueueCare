@@ -20,6 +20,10 @@ export interface ClinicSummary {
   id: string; name: string; slug: string; status: string; timezone: string; created_at: string;
 }
 
+export type ClinicStatus = "PENDING" | "ACTIVE" | "SUSPENDED";
+/** One row of the platform audit log. The API returns ids only, so clinic names are looked up from the clinic list. */
+export interface PlatformAuditEntry { id: string; action: string; actor_user_id: string | null; clinic_id: string | null; created_at: string }
+
 export type QueuePolicy = "APPOINTMENT_FIRST" | "FIFO";
 export interface ClinicSettings {
   booking_horizon_days: number; min_notice_minutes: number; cancellation_cutoff_hours: number;

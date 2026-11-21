@@ -1,6 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { authFile, readSeed, type Role } from "./helpers/seed";
+import { authFile, platformAuthFile, readSeed, type Role } from "./helpers/seed";
 
 // Phone-width check (390 x 844). It cannot judge taste, but it does catch the commonest phone bug: a page that
 // scrolls sideways because something is wider than the screen. Full-page screenshots are written to
@@ -114,6 +114,31 @@ test.describe("phone width", () => {
       o = await sidewaysOverflow(page);
       expect(o.extra, `clinic settings are ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
       await page.screenshot({ path: `${OUT}/admin-setup-clinic.png`, fullPage: true });
+    } finally { await ctx.close().catch(() => undefined); }
+  });
+
+  test("the platform screens (clinic list, warning, activity) fit a phone", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: VIEWPORT, isMobile: true, hasTouch: true, deviceScaleFactor: 2, storageState: platformAuthFile });
+    try {
+      const page = await ctx.newPage();
+      await page.goto("/app/platform");
+      await page.getByRole("tab", { name: /^All \(/ }).click();
+      await expect(page.getByRole("button", { name: /^Suspend / }).first()).toBeVisible();
+      let o = await sidewaysOverflow(page);
+      expect(o.extra, `platform clinics are ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: `${OUT}/platform-clinics.png`, fullPage: true });
+
+      await page.getByRole("button", { name: /^Suspend / }).first().click();
+      await expect(page.getByText(/cannot use it until it is open again/)).toBeVisible();
+      o = await sidewaysOverflow(page);
+      expect(o.extra, `the suspend warning is ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
+      await page.getByRole("button", { name: "Cancel" }).click();
+
+      await page.getByRole("tab", { name: "Activity" }).click();
+      await expect(page.getByText(/Taken from the latest 200 events/)).toBeVisible();
+      o = await sidewaysOverflow(page);
+      expect(o.extra, `platform activity is ${o.extra}px too wide. Sticking out: ${o.culprits.join(" | ")}`).toBeLessThanOrEqual(1);
+      await page.screenshot({ path: `${OUT}/platform-activity.png`, fullPage: true });
     } finally { await ctx.close().catch(() => undefined); }
   });
 });
