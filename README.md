@@ -3,7 +3,7 @@
 **Smarter appointments. Shorter waiting. Better clinic management.**
 
 A multi-tenant clinic queue and appointment platform with a wait-time prediction model. The backend, database, ML
-pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 33 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
+pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 39 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
 walkthrough script is included).
 
 > ⚠️ **Demonstration system.** All data is synthetic. QueueCare is not a clinical record system and claims no
@@ -20,7 +20,7 @@ walkthrough script is included).
 | Notifications (in-app, email, SMS) | Built with **mock providers only**: nothing is ever sent |
 | Analytics, slot-length advice, simulation lab | Built, tested |
 | Production Docker stack (HTTPS proxy, backups, restore drill) | Rehearsed locally on Docker Desktop; **never deployed to a real host** |
-| CI (GitHub Actions: backend, frontend, browser tests, production stack, secret scan) | **All five jobs pass** (run #4, 2026-11-18, about 11 minutes) |
+| CI (GitHub Actions: backend, frontend, browser tests, production stack, secret scan) | **All five jobs pass** (most recent runs 2026-11-22; the frontend job also runs `npm audit`, the backend `pip-audit`) |
 | Frontend, patient screens (Next.js): auth, join clinic, book/cancel, live queue | Built; browser-tested and used by hand ([docs/frontend.md](docs/frontend.md)) |
 | Frontend staff queue board with WebSocket updates | Built; browser-tested and used by hand, including live updates through the HTTPS proxy |
 | Frontend admin screens (insights, estimate quality, slot advice, simulation lab) | Browser-tested (every tab loads, the lab runs); numbers not reviewed against real data |
@@ -29,13 +29,14 @@ walkthrough script is included).
 | Clinic setup screens (departments, doctors incl. editing, weekly hours, time off, team, clinic settings) | Covered by browser tests that pass in CI (run #10); phone-width checks pass; not tested on a real phone |
 | Platform-admin screens (approve, decline, suspend, reopen clinics; activity log) | **Works end to end** (browser tests pass on the dev stack and in CI); not yet looked at by eye ([docs/frontend.md](docs/frontend.md)) |
 | Find a clinic search (by name or address word, paged) | **Works end to end**: 3 new browser tests pass on the dev stack (it is searched through the real API); the 6 new backend tests, the 7 new unit tests, the typecheck and the browser tests all pass locally and in CI; not looked at by eye ([docs/frontend.md](docs/frontend.md)) |
+| Free hosted demo (Vercel web app, Render API, Neon database) | **Written, not yet run**: files and a step-by-step guide are ready ([docs/deployment-free.md](docs/deployment-free.md)); nothing has been deployed to a real host yet |
 | Screenshots, public demo | **Not built** |
 
 Full list of gaps: [docs/limitations.md](docs/limitations.md).
 
 ## Verified so far
 
-**436 automated tests pass** (run in Docker against real PostgreSQL 16 and Redis 7), covering tenant isolation,
+**452 backend tests pass** (2026-11-22; plus 85 frontend unit tests and 39 browser tests) (run in Docker against real PostgreSQL 16 and Redis 7), covering tenant isolation,
 authorization on every route, concurrent booking (exactly one winner), queue token uniqueness, WebSocket auth,
 notification idempotency, ML pipeline behaviour, and a route inventory that fails if any endpoint is left open.
 The test suite is about 5,300 lines against about 8,400 lines of application and ML code.
@@ -75,7 +76,7 @@ Prerequisites: Docker Desktop, Python 3.12 (for the demo script only).
 copy .env.example .env          # then replace every CHANGE_ME (see docs/setup.md)
 docker compose up -d postgres redis backend
 docker compose run --rm backend alembic upgrade head
-docker compose run --rm backend pytest -v                 # 436 tests
+docker compose run --rm backend pytest -v                 # 452 tests
 docker compose run --rm -e QUEUECARE_ADMIN_PASSWORD="<strong password>" backend python -m app.cli create-superadmin --email platform@example.com
 $env:QUEUECARE_ADMIN_PASSWORD = "<same password>"
 python scripts/demo_walkthrough.py --platform-email platform@example.com

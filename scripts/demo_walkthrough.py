@@ -14,6 +14,7 @@ Prerequisites (development stack, see docs/setup.md):
 Run (PowerShell):
     $env:QUEUECARE_ADMIN_PASSWORD = "<the same password>"
     python scripts/demo_walkthrough.py --platform-email platform@example.com
+    python scripts/demo_walkthrough.py --platform-email platform@example.com --showcase   # fictional names, livelier queue, for screenshots
 
 Rate limit: registration allows 10 per hour per IP and each run registers 4 users, so run it at most twice an hour
 (a 429 from /auth/register means wait, not a bug; the limit is a deliberate security control).
@@ -81,6 +82,8 @@ def main() -> None:
     ap.add_argument("--base", default="http://localhost:8000")
     ap.add_argument("--origin", default="http://localhost:3000", help="must be listed in BACKEND_CORS_ORIGINS")
     ap.add_argument("--platform-email", required=True)
+    ap.add_argument("--showcase", action="store_true",
+                    help="use realistic FICTIONAL names (not 'Demo ...'), more visits and a livelier queue, for screenshots and recordings")
     ap.add_argument("--insecure", action="store_true",
                     help="skip TLS verification; ONLY for https://localhost rehearsals with Caddy's local certificate")
     a = ap.parse_args()
@@ -89,20 +92,29 @@ def main() -> None:
         sys.exit("Set QUEUECARE_ADMIN_PASSWORD to the platform admin's password.")
     run = time.strftime("%m%d%H%M%S")
 
+    # Invented names for --showcase. Any resemblance to a real person is a coincidence; the addresses are on example.com (never delivered).
+    people = {"admin": ("Nadia Karim", "nadia.karim"), "reception": ("Tariq Hossain", "tariq.hossain"),
+              "doctor": ("Amina Rahman", "amina.rahman"), "patient": ("Imran Chowdhury", "imran.chowdhury")}
+    clinic_name = "Lakeside Family Clinic" if a.showcase else f"Demo Clinic {run}"
+    doctor_name = "Dr Amina Rahman" if a.showcase else "Dr Synthetic"
+    walk_ins = (["Farhana Akter", "Rahim Uddin", "Sumaiya Islam", "Kamal Hasan", "Nusrat Jahan", "Zahid Karim"] if a.showcase
+                else ["Walk-in Synthetic A", "Walk-in Synthetic B", "Walk-in Synthetic C"])
+
     def user(role: str) -> tuple[Client, dict, str]:
-        c, email = Client(a.base, a.origin, a.insecure), f"demo-{run}-{role}@example.com"
-        me = c.call("POST", "/auth/register", {"email": email, "password": DEMO_PASSWORD, "full_name": f"Demo {role.title()}"})
+        full_name, stem = people[role] if a.showcase else (f"Demo {role.title()}", f"demo-{run}-{role}")
+        c, email = Client(a.base, a.origin, a.insecure), (f"{stem}.{run}@example.com" if a.showcase else f"{stem}@example.com")
+        me = c.call("POST", "/auth/register", {"email": email, "password": DEMO_PASSWORD, "full_name": full_name})
         c.call("POST", "/auth/login", {"email": email, "password": DEMO_PASSWORD})
         return c, me, email
 
     step("1. Register four synthetic users and sign in (Argon2id passwords, cookie sessions, CSRF)")
-    admin, _, _ = user("admin")
+    admin, _, admin_email = user("admin")
     recep, _, recep_email = user("reception")
     doctor, doctor_me, doctor_email = user("doctor")
-    patient, _, _ = user("patient")
+    patient, _, patient_email = user("patient")
 
     step("2. Admin registers a clinic (PENDING) and a platform admin approves it")
-    clinic = admin.call("POST", "/clinics", {"name": f"Demo Clinic {run}", "slug": f"demo-{run}"})
+    clinic = admin.call("POST", "/clinics", {"name": clinic_name, "slug": f"lakeside-{run}" if a.showcase else f"demo-{run}"})
     cid = clinic["id"]
     print(f"clinic {clinic['slug']} status={clinic['status']}")
     root = Client(a.base, a.origin, a.insecure)
@@ -118,7 +130,7 @@ def main() -> None:
 
     step("4. Department, doctor profile linked to the doctor's login, weekly schedule")
     dept = admin.call("POST", f"{base}/departments", {"name": "General Medicine", "queue_prefix": "G"})
-    doc = admin.call("POST", f"{base}/doctors", {"display_name": "Dr Synthetic", "department_id": dept["id"],
+    doc = admin.call("POST", f"{base}/doctors", {"display_name": doctor_name, "department_id": dept["id"],
                                                   "default_slot_minutes": 30, "buffer_minutes": 0,
                                                   "user_id": doctor_me["id"]})
     for dow in range(7):
@@ -135,7 +147,7 @@ def main() -> None:
 
     step("6. Reception registers walk-ins; the doctor runs the live queue")
     tokens = []
-    for name in ("Walk-in Synthetic A", "Walk-in Synthetic B", "Walk-in Synthetic C"):
+    for name in walk_ins:
         p = recep.call("POST", f"{base}/patients", {"full_name": name})
         tokens.append(recep.call("POST", f"{base}/queue/walk-ins", {"doctor_id": doc["id"], "patient_id": p["id"]}))
     print("tokens issued:", ", ".join(t["token_label"] for t in tokens))
@@ -143,12 +155,16 @@ def main() -> None:
     print(f"estimate for the last walk-in: source={est['source']} "
           f"median={est['median_minutes']} min, range {est['lower_minutes']}-{est['upper_minutes']} "
           f"(staff view; factors listed: {len(est.get('factors') or [])})")
-    for t in tokens[:2]:
+    done = 3 if a.showcase else 2          # showcase: three visits finished, one in progress, the rest still waiting
+    for t in tokens[:done]:
         doctor.call("POST", f"{base}/queue/tokens/{t['id']}/call")
         doctor.call("POST", f"{base}/queue/tokens/{t['id']}/start")
         doctor.call("POST", f"{base}/queue/tokens/{t['id']}/complete")
+    if a.showcase:
+        doctor.call("POST", f"{base}/queue/tokens/{tokens[done]['id']}/call")
+        doctor.call("POST", f"{base}/queue/tokens/{tokens[done]['id']}/start")
     board = doctor.call("GET", f"{base}/doctors/{doc['id']}/queue")
-    print(f"two visits completed; board now: {json.dumps(board)[:200]}...")
+    print(f"{done} visits completed; board now: {json.dumps(board)[:200]}...")
 
     step("7. Admin-only analytics, drift and scheduling advice")
     ov = admin.call("GET", f"{base}/analytics/overview")
@@ -168,6 +184,10 @@ def main() -> None:
     code = patient.call("GET", f"{base}/analytics/overview", ok=(403,))
     print("patient -> analytics: 403 as expected:", code["error"]["code"])
     print(f"\nDone. Clinic id {cid}. Everything above is synthetic.")
+    if a.showcase:
+        print(f"\nSign in at {a.origin}/login (password for all four: {DEMO_PASSWORD}):")
+        for label, em in (("clinic admin", admin_email), ("receptionist", recep_email), ("doctor", doctor_email), ("patient", patient_email)):
+            print(f"  {label:13} {em}")
 
 
 if __name__ == "__main__":

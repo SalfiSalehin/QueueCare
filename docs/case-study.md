@@ -15,7 +15,7 @@ and shows staff why.
   explanations, drift monitoring and an honest heuristic fallback.
 - Notifications with idempotent delivery (mock providers), admin analytics, slot-length advice and a simulation lab.
 - A hardened production stack (HTTPS proxy, non-root read-only containers, backups and a restore drill) and a test
-  suite of 436 tests, including a route inventory that fails if any endpoint is left unprotected.
+  suite of 452 backend tests, including a route inventory that fails if any endpoint is left unprotected.
 
 ## The numbers (synthetic data, seed 42)
 The served model's median error is 1.75 minutes against 1.82 for a naive baseline: a small win, because most of the
@@ -44,7 +44,7 @@ list: [limitations.md](limitations.md). The most valuable next steps would be a 
 calibrating prediction intervals by queue length, and running the CI workflow and `pip-audit` for the first time.
 
 ## Accurate ways to describe this work
-- "Designed and built a multi-tenant clinic queue API (FastAPI, PostgreSQL row-level security, exclusion constraints) with 436 automated tests against a real database."
+- "Designed and built a multi-tenant clinic queue API (FastAPI, PostgreSQL row-level security, exclusion constraints) with 452 automated tests against a real database."
 - "Implemented a quantile wait-time model with SHAP explanations and drift monitoring, trained on a synthetic simulator, and documented its measured limits (including interval under-coverage for long queues)."
 - "Built idempotent notification delivery (transactional enqueue, leases, backoff) and a rehearsed production stack with backup and restore drills."
 

@@ -39,6 +39,16 @@ docker compose logs -f backend
 > The `frontend` service serves the patient screens at http://localhost:3000. A clinic must exist and be ACTIVE before
 > "Find a clinic" lists anything: run `python scripts/demo_walkthrough.py --platform-email <platform admin email>`
 > (see the script header). Start everything with `docker compose up -d`.
+>
+> **Realistic-looking demo data for screenshots:** add `--showcase` to the walk-through command. It creates "Lakeside Family Clinic" with invented
+> people (Nadia Karim, Tariq Hossain, Dr Amina Rahman, Imran Chowdhury, six walk-in patients), three finished visits, one in progress and
+> two waiting, and prints the four sign-in addresses at the end. The names are fictional: do not use a real person's name for demo data.
+> Sign in with those accounts for screenshots, not with your own, so your real email address never appears in an image.
+>
+> **Hiding the yellow "synthetic data only" banner** (for screenshots or a recording): put `NEXT_PUBLIC_DEMO_MODE=false` in your local `.env`
+> and run `docker compose up -d --force-recreate frontend` (a plain restart does not re-read `.env`). It is on by default and should stay on for
+> anything other people can reach. The browser test "the landing page explains the product" expects the banner, so set it back to `true` (and
+> recreate the frontend) before running the browser tests.
 
 ## 3. Stop / reset
 

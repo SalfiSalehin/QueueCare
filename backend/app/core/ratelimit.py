@@ -83,13 +83,18 @@ def get_rate_limiter() -> RateLimiter:
 
 
 def get_client_ip(request: Request, settings: Settings) -> str | None:
-    """Best-effort client IP. X-Forwarded-For is honoured only when TRUST_PROXY_HEADERS is set
-    (use the rightmost entry: the one appended by our own trusted proxy)."""
+    """Best-effort client IP. X-Forwarded-For is honoured only when TRUST_PROXY_HEADERS is set.
+    Each trusted proxy appends the address it saw, so counting from the right is the only safe way: with TRUSTED_PROXY_HOPS=1 (one
+    proxy, e.g. Caddy) the rightmost entry is used; with 2 (e.g. Vercel in front of Render) the one before it, which is the visitor.
+    Entries further left can be forged by the client and are never used. A shorter chain than configured falls back to the peer address."""
     raw: str | None = None
     if settings.trust_proxy_headers:
         forwarded = request.headers.get("x-forwarded-for")
         if forwarded:
-            raw = forwarded.split(",")[-1].strip()
+            parts = [p.strip() for p in forwarded.split(",")]
+            hops = settings.trusted_proxy_hops
+            if len(parts) >= hops:
+                raw = parts[-hops]
     if raw is None and request.client:
         raw = request.client.host
     try:

@@ -98,7 +98,7 @@ function AddDoctor({ clinicId, departments }: { clinicId: string; departments: D
           <SelectField label="Department" value={chosenDept} onChange={(e) => setDept(e.target.value)}>
             {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </SelectField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 items-end gap-3">   {/* items-end: labels wrap to different heights, the inputs still line up */}
             <Field label="Appointment length (minutes)" type="number" inputMode="numeric" min={5} max={240} value={slot} onChange={(e) => setSlot(e.target.value)} />
             <Field label="Gap between appointments (minutes)" type="number" inputMode="numeric" min={0} max={120} value={buffer} onChange={(e) => setBuffer(e.target.value)} />
           </div>

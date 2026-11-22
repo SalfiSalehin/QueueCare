@@ -9,7 +9,7 @@ import re
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _ORIGIN_RE = re.compile(r"^https?://[^/\s]+$")
@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     max_request_body_bytes: int = 1_048_576
     trust_proxy_headers: bool = False
+    trusted_proxy_hops: int = Field(default=1, ge=1, le=5)   # how many proxies append to X-Forwarded-For before the API (Caddy alone: 1)
 
     # Rate limiting
     rate_limit_enabled: bool = True

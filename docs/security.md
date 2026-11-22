@@ -116,6 +116,6 @@
 
 ## Phase 11 - Deployment
 - Production settings validator (HTTPS-only cookies/origins, no placeholders, long distinct secrets) is unit-tested against the shipped template.
-- Only the reverse proxy publishes ports; DB, Redis and API sit on an internal network. API runs as non-root, read-only filesystem, no capabilities. `TRUST_PROXY_HEADERS` is enabled only behind Caddy.
+- Only the reverse proxy publishes ports; DB, Redis and API sit on an internal network. API runs as non-root, read-only filesystem, no capabilities. `TRUST_PROXY_HEADERS` is enabled only behind Caddy (or, in the free hosted demo, behind Vercel and Render with `TRUSTED_PROXY_HOPS=2`: the visitor's address is counted from the right of `X-Forwarded-For`, so a forged left-hand entry is never used).
 - Secrets exist only in the git-ignored `.env.production` (mode 600, generated randomly); `.dockerignore` keeps env files, models and datasets out of images.
 - See [deployment.md](deployment.md) for backups, restore drill and known gaps.

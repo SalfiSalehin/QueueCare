@@ -3,6 +3,7 @@ const apiInternal = (process.env.API_INTERNAL_URL || "http://backend:8000").repl
 
 const nextConfig = {
   reactStrictMode: true,
+  devIndicators: false,                 // hides the round "N" badge the dev server draws over the page corner (it covered the sidebar and footer)
   poweredByHeader: false,
   output: "standalone",                 // small production image (see Dockerfile, stage `prod`)
   // The browser only ever talks to this origin. /api/v1/* is proxied to the backend, so session cookies are

@@ -1,3 +1,5 @@
+> A free hosted demo on Vercel, Render and Neon is described separately in [deployment-free.md](deployment-free.md).
+
 # Deployment (Phase 11; web app added in F4)
 
 Host-neutral: one Linux machine with Docker Compose v2 runs the whole stack. This is the simplest setup that keeps
