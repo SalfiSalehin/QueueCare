@@ -3,7 +3,7 @@
 **Smarter appointments. Shorter waiting. Better clinic management.**
 
 A multi-tenant clinic queue and appointment platform with a wait-time prediction model. The backend, database, ML
-pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 39 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
+pipeline, real-time layer, notifications, analytics and deployment stack are built and tested. **The web app covers patients, front desk, doctors and clinic admins** (booking, live queue board, insights, simulation lab, clinic setup), is covered by 41 browser tests, and runs behind HTTPS in a local production rehearsal. It has not been deployed to a real host or tested on phones. The full system is also available through its HTTP API (a runnable
 walkthrough script is included).
 
 > ⚠️ **Demonstration system.** All data is synthetic. QueueCare is not a clinical record system and claims no
@@ -24,7 +24,7 @@ walkthrough script is included).
 | Frontend, patient screens (Next.js): auth, join clinic, book/cancel, live queue | Built; browser-tested and used by hand ([docs/frontend.md](docs/frontend.md)) |
 | Frontend staff queue board with WebSocket updates | Built; browser-tested and used by hand, including live updates through the HTTPS proxy |
 | Frontend admin screens (insights, estimate quality, slot advice, simulation lab) | Browser-tested (every tab loads, the lab runs); numbers not reviewed against real data |
-| Frontend browser tests (Playwright) | 39 **pass** on the dev stack and in CI on GitHub (2026-11-22) |
+| Frontend browser tests (Playwright) | 41 **pass** on the dev stack and in CI on GitHub (2026-11-25) |
 | Production web-app image behind Caddy (F4) | Built and run locally behind Caddy on Docker Desktop (2026-11-16): landing, register/sign-in, API routing and live updates over HTTPS verified by hand; **not deployed to a real host, no browser tests against it** |
 | Clinic setup screens (departments, doctors incl. editing, weekly hours, time off, team, clinic settings) | Covered by browser tests that pass in CI (run #10); phone-width checks pass; not tested on a real phone |
 | Platform-admin screens (approve, decline, suspend, reopen clinics; activity log) | **Works end to end** (browser tests pass on the dev stack and in CI); not yet looked at by eye ([docs/frontend.md](docs/frontend.md)) |
@@ -36,7 +36,7 @@ Full list of gaps: [docs/limitations.md](docs/limitations.md).
 
 ## Verified so far
 
-**452 backend tests pass** (2026-11-22; plus 85 frontend unit tests and 39 browser tests) (run in Docker against real PostgreSQL 16 and Redis 7), covering tenant isolation,
+**452 backend tests pass** (2026-11-22; plus 101 frontend unit tests and 41 browser tests, 2026-11-25) (run in Docker against real PostgreSQL 16 and Redis 7), covering tenant isolation,
 authorization on every route, concurrent booking (exactly one winner), queue token uniqueness, WebSocket auth,
 notification idempotency, ML pipeline behaviour, and a route inventory that fails if any endpoint is left open.
 The test suite is about 5,300 lines against about 8,400 lines of application and ML code.

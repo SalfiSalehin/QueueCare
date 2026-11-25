@@ -219,3 +219,16 @@ dates. Browser tests: `e2e/setup.spec.ts`.
 naming the elements that stick out, plus one test that the clinic setup form fits on a phone. It also writes a full-page screenshot of each
 screen to `frontend/e2e-results/mobile/` for a person to look at. It checks layout overflow only: it cannot judge readability, tap-target
 comfort or taste, and it uses Chromium's phone emulation, not a real phone or another browser engine.
+
+### Register a clinic (2026-11-25)
+> **Status: the browser tests pass (41 of 41 on the dev stack, 2026-11-25), and CI is green.** That includes 2 new ones in
+> `e2e/register-clinic.spec.ts`, 14 new unit tests (`src/lib/register-clinic.test.ts`, 101 unit tests in all) and the typecheck.
+> The screen has not been looked at by eye on the hosted site yet.
+* **What it does:** **My clinics** has a **Register a clinic** button (`/app/register-clinic`): clinic name, web address name and time zone.
+  The address is suggested from the name (accents dropped, hyphens between words) and the person's own time zone is pre-selected.
+  The form checks the same rules as the API (name 2 to 200 characters; address 3 to 63 lowercase letters, digits and hyphens; a real time zone),
+  and the server checks again. An address already used by another clinic is refused with a message.
+* **What happens next:** the clinic starts as waiting for approval and the person becomes its clinic admin. On **My clinics** it shows its name
+  and "Waiting for approval by a platform administrator" and is not a link yet (a clinic that is not open has no pages to show). The platform
+  admin approves it under **Platform**; it then appears in **Find a clinic** and its card becomes a link.
+* **Why a separate address name:** the web address name is how a clinic is identified in a search, and it must be unique across all clinics.
