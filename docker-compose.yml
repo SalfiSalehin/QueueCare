@@ -107,6 +107,8 @@ services:
     environment:
       BASE_URL: http://localhost:3000
       E2E_BACKEND_HOST: backend
+      # Same value the frontend service gets, so the banner check matches what the app shows.
+      NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-true}
       E2E_PLATFORM_EMAIL: ${E2E_PLATFORM_EMAIL:-}
       QUEUECARE_ADMIN_PASSWORD: ${QUEUECARE_ADMIN_PASSWORD:-}
     volumes:

@@ -4,7 +4,11 @@ test.describe("signed out", () => {
   test("the landing page explains the product and leads to sign-up", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Know where you stand in line");
-    await expect(page.getByText("Demonstration system: synthetic data only")).toBeVisible();
+    // The banner follows NEXT_PUBLIC_DEMO_MODE, the same setting the app reads (shown unless it is exactly "false"), so the test
+    // checks for it when it should be there and checks it is gone when it was switched off for screenshots.
+    const banner = page.getByText("Demonstration system: synthetic data only");
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === "false") await expect(banner).toHaveCount(0);
+    else await expect(banner).toBeVisible();
     await page.getByRole("link", { name: "Create an account" }).first().click();
     await expect(page).toHaveURL(/\/register$/);
     await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();

@@ -30,6 +30,8 @@ export interface ClinicSettings {
   queue_policy: QueuePolicy; walkin_priority_enabled: boolean;
 }
 export interface ClinicDetail extends ClinicSummary { settings: ClinicSettings }
+/** What the clinic-registration endpoint accepts. The new clinic starts PENDING and the sender becomes its clinic admin. */
+export interface ClinicRegistration { name: string; slug: string; timezone: string }
 /** Fields the clinic-update endpoint accepts. Only what changed is sent; the API merges settings. */
 export interface ClinicPatch { name?: string; timezone?: string; settings?: Partial<ClinicSettings> }
 export interface DoctorPatch { display_name?: string; department_id?: string; default_slot_minutes?: number; buffer_minutes?: number }

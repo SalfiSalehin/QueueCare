@@ -14,7 +14,7 @@ import { cn } from "@/lib/cn";
 import { isPlatformAdmin } from "@/lib/platform";
 
 const NAV = [
-  { href: "/app", label: "My clinics", Icon: Building2, active: (p: string) => p === "/app" || p.startsWith("/app/c/") },
+  { href: "/app", label: "My clinics", Icon: Building2, active: (p: string) => p === "/app" || p.startsWith("/app/c/") || p === "/app/register-clinic" },
   { href: "/app/clinics", label: "Find a clinic", Icon: Search, active: (p: string) => p.startsWith("/app/clinics") },
 ];
 const PLATFORM_NAV = { href: "/app/platform", label: "Platform", Icon: ShieldCheck, active: (p: string) => p.startsWith("/app/platform") };

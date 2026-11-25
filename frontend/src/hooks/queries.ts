@@ -6,6 +6,7 @@ import { appointmentService } from "@/services/appointments";
 import { authService } from "@/services/auth";
 import { clinicService } from "@/services/clinics";
 import { queueService } from "@/services/queue";
+import type { ClinicRegistration } from "@/types/api";
 
 export const keys = {
   me: ["me"] as const,
@@ -71,6 +72,15 @@ export function useJoinClinic() {
   return useMutation({
     mutationFn: (clinicId: string) => clinicService.join(clinicId),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.me }),
+  });
+}
+
+/** After registering, the signed-in user has a new membership, so "me" is refetched; the open-clinic list is refreshed too. */
+export function useRegisterClinic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ClinicRegistration) => clinicService.register(body),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: keys.me }), qc.invalidateQueries({ queryKey: keys.directory })]),
   });
 }
 

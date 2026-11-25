@@ -92,6 +92,11 @@ python scripts/demo_walkthrough.py --base https://queuecare-api.onrender.com --o
 The script prints four sign-in addresses at the end (password `Demo-Clinic-Passw0rd!2026`, synthetic). Registration is limited to 10 per hour
 per visitor address, and each run registers four users.
 
+### Adding more clinics
+Signed in, **My clinics** has a **Register a clinic** button. The clinic starts as waiting for approval; sign in as the platform admin
+(**Platform**) and approve it, and it then appears in **Find a clinic**. Running the walkthrough script again also makes a new clinic each time.
+(The button and its browser test were added after the first hosted run; their test results are recorded in the README only once run.)
+
 ## Step 6. Check it by hand
 - [ ] `https://queuecare.vercel.app` loads and shows the yellow "synthetic data only" banner.
 - [ ] Sign in as the patient from Step 5; open **Find a clinic**, search "lake", open the clinic, look at Appointments.
