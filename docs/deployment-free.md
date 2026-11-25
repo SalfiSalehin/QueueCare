@@ -1,8 +1,8 @@
 # Free hosted demo (Vercel + Render + Neon)
 
-> **Status: written, not yet run.** None of this has been tried on the real services. The two code changes it needs (the proxy-hops
-> setting and its tests) are in the repository; the files below were written from the project's configuration and the services'
-> documentation. Expect to fix small things on the first attempt, and record them here.
+> **Status: run once on the real services (2026-11-25) and working.** The API on Render, the web app on Vercel and the database on Neon
+> were set up by following this guide; the site was then checked by hand (see "What was checked" below). The first run needed a few fixes,
+> listed under "Problems met on the first run". The guide below keeps its original wording; where the real addresses differed, the notes say so.
 >
 > This is a demonstration host for a portfolio, not production. It runs on free plans with synthetic data only. For a real
 > single-server deployment with HTTPS, backups and a restore drill, see [deployment.md](deployment.md).
@@ -18,6 +18,23 @@
 
 The live-queue WebSocket connects from the browser straight to the API (`wss://`), because Vercel cannot proxy WebSockets.
 
+## What was checked (2026-11-25)
+* The landing page loads on the Vercel address, and the API's `/health/ready` answers `{"status":"ok","database":"ok","redis":"disabled"}`.
+* Sign-in works for the clinic admin, receptionist and patient created by the demo script, so cookies and the sign-in proxy work.
+* **Find a clinic** lists approved clinics; the receptionist's queue board shows **Live updates on**, so the browser reached the API's WebSocket directly.
+* A clinic was registered from the new **Register a clinic** screen and approved by the platform admin, and then appeared in the search.
+* **Not checked:** phone screens, the sign-up rate limit behind the two proxies (`TRUSTED_PROXY_HOPS=2`), the full wake-up time after a long idle period,
+  and there are no browser tests against the hosted site (the 41 browser tests run on the local stack and in CI).
+
+## Problems met on the first run
+| What happened | Cause and fix |
+|---|---|
+| Render failed at the first deploy: `Could not parse SQLAlchemy URL` | The database address for migrations was pasted wrongly. Copy it from PowerShell with `$mig \| Set-Clipboard` instead of by hand. The migration step now explains this error in plain words and never prints the address |
+| Render gave the service a different address than planned (`queuecare-api-e9lv.onrender.com`) | The name was taken, so Render added a suffix. Always use the address shown on the service page |
+| Vercel gave the project `queue-care-two.vercel.app`, not the name planned | After the Vercel deploy, `BACKEND_CORS_ORIGINS` and `FRONTEND_URL` on Render were changed to that address, and the service redeployed itself |
+| The Vercel address timed out on one home connection (`ERR_CONNECTION_TIMED_OUT`) | The API and the site were both up (checked from another network); the problem was on that visitor's connection and went away later. If it happens, try mobile data or another DNS |
+| Running the demo script twice made two clinics with the same name | Each run registers a new clinic. Close the extra one under **Platform** (suspend), or run the script once |
+
 ## What to expect from free plans (checked 2026-11-22)
 * **Render** spins a free service down after 15 minutes without traffic; waking takes about a minute. 750 free instance hours a month are
   shared across the workspace, and the filesystem is wiped on every restart. ([Render free tier](https://render.com/docs/free))
@@ -29,6 +46,7 @@ The live-queue WebSocket connects from the browser straight to the API (`wss://`
 * The wait-time model files are not in the repository, so the hosted site uses the honest heuristic estimate (labelled "simple rule").
 
 ## Names used below
+*(On the real run the addresses were `https://queuecare-api-e9lv.onrender.com` and `https://queue-care-two.vercel.app`; see "Problems met" above.)*
 Pick names first so the addresses are predictable. Replace them everywhere if yours differ.
 * Render service: `queuecare-api` giving `https://queuecare-api.onrender.com` (Render adds a suffix if the name is taken; use the address it shows)
 * Vercel project: `queuecare` giving `https://queuecare.vercel.app` (same rule)

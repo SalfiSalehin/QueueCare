@@ -10,6 +10,8 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 from app.models import Base
 
@@ -17,9 +19,19 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-_url = os.environ.get("MIGRATION_DATABASE_URL") or os.environ.get("DATABASE_URL")
+_name = "MIGRATION_DATABASE_URL" if os.environ.get("MIGRATION_DATABASE_URL") else "DATABASE_URL"
+# Values pasted into a hosting dashboard often carry a stray space, line break or pair of quotes; those are removed here.
+_url = (os.environ.get(_name) or "").strip().strip("\"'").strip()
 if not _url:
     raise RuntimeError("Set MIGRATION_DATABASE_URL (or DATABASE_URL) to run migrations.")
+try:
+    make_url(_url)
+except ArgumentError:
+    # The value itself is never printed: it contains the database password.
+    raise RuntimeError(
+        f"{_name} is not a valid database URL. Expected postgresql+psycopg://USER:PASSWORD@HOST/DBNAME?sslmode=require "
+        "(no spaces, no line breaks, no quotation marks). Check the value in the hosting dashboard."
+    ) from None
 config.set_main_option("sqlalchemy.url", _url.replace("%", "%%"))
 
 target_metadata = Base.metadata
